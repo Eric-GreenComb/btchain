@@ -1,0 +1,11 @@
+[genesis]
+account = "0x02865c395bfd104394b786a264662d02177897391aba1155f854cb1065b6a444e5"
+amount = "10000000000"
+
+
+[db]
+type = "sqlite3"
+path = "./data/"
+
+[log]
+path = "./log/"
