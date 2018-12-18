@@ -97,6 +97,8 @@ func (app *BTApplication) init() {
 		amount, _ := new(big.Int).SetString(cfg.Genesis.Amount, 10)
 		app.stateDup.state.AddBalance(addr, amount)
 
+		logger.Info("Genesis", zap.String("account", addr.Hex()), zap.String("amount", amount.String()))
+
 		root := app.stateDup.state.IntermediateRoot(false)
 		_, err := app.stateDup.state.Commit(false)
 		if err != nil {

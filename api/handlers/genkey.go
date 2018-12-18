@@ -21,7 +21,8 @@ func (hd *Handler) GenKey(ctx *gin.Context) {
 	buff := make([]byte, 32)
 	copy(buff[32-len(privkey.D.Bytes()):], privkey.D.Bytes())
 	result.Privkey = ethcmn.Bytes2Hex(buff)
-	result.Address = ethcmn.Bytes2Hex(crypto.FromECDSAPub(&privkey.PublicKey))
+	//result.Address = ethcmn.Bytes2Hex(crypto.CompressPubkey(&privkey.PublicKey))
+	result.Address = crypto.PubkeyToAddress(privkey.PublicKey).Hex()
 
 	hd.responseWrite(ctx, true, result)
 }

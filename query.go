@@ -1,7 +1,7 @@
 package btchain
 
 import (
-	"errors"
+	"encoding/json"
 	"github.com/axengine/btchain/define"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -11,6 +11,7 @@ import (
 const (
 	QUERY_TX      = "/tx"
 	QUERY_ACCOUNT = "/account"
+	QUERY_NONCE   = "/nonce"
 )
 
 var (
@@ -18,59 +19,54 @@ var (
 	ZERO_HASH    = ethcmn.Hash{}
 )
 
-//
-//type Result struct {
-//	Code int32  `json:"Code"`
-//	Data []byte `json:"Data"`
-//	Log  string `json:"Log"` // Can be non-deterministic
-//}
-//
-//func NewResultOK(data []byte, log string) Result {
-//	return Result{
-//		Code: 0,
-//		Data: data,
-//		Log:  log,
-//	}
-//}
-//
-//func NewError(code int32, log string) Result {
-//	return Result{
-//		Code: code,
-//		Log:  log,
-//	}
-//}
-
-func (app *BTApplication) QueryTx(tx []byte) ([]byte, error) {
+func (app *BTApplication) QueryTx(tx []byte) define.Result {
 	var query define.TxQuery
 	if err := rlp.DecodeBytes(tx, &query); err != nil {
 		app.logger.Debug("rlp.DecodeBytes", zap.Error(err))
-		return nil, err
+		return define.NewError(define.CodeType_EncodingError, err.Error())
 	}
 
 	if query.Account != ZERO_ADDRESS {
 		result, err := app.dataM.QueryAccountTxs(&query.Account, query.Cursor, query.Limit, query.Order)
-		b, err := rlp.EncodeToBytes(result)
-		return b, err
+		if err != nil {
+			return define.NewError(define.CodeType_InternalError, err.Error())
+		}
+		return MakeResultData(result)
 	}
 	if query.TxHash != ZERO_HASH {
 		result, err := app.dataM.QuerySingleTx(&query.TxHash)
-		b, err := rlp.EncodeToBytes(result)
-		return b, err
+		if err != nil {
+			return define.NewError(define.CodeType_InternalError, err.Error())
+		}
+		return MakeResultData(result)
 	}
 
 	result, err := app.dataM.QueryAllTxs(query.Cursor, query.Limit, query.Order)
-	b, err := rlp.EncodeToBytes(result)
-	return b, err
+	if err != nil {
+		return define.NewError(define.CodeType_InternalError, err.Error())
+	}
+	return MakeResultData(result)
 }
 
-func (app *BTApplication) QueryAccount(from []byte) ([]byte, error) {
-	address := ethcmn.BytesToAddress(from)
+func (app *BTApplication) QueryAccount(from []byte) define.Result {
+	address := ethcmn.HexToAddress(string(from))
 
 	if !app.stateDup.state.Exist(address) {
-		return nil, errors.New("account not exist")
+		return define.NewError(define.CodeType_UnknownAccount, address.Hex())
 	}
 
 	balance := app.stateDup.state.GetBalance(address)
-	b, err := rlp.EncodeToBytes(balance)
-	return b, err
+	b := &define.BlockAccount{
+		Addr:    address.Hex(),
+		Balance: balance.String(),
+	}
+	return MakeResultData(b)
+}
+
+func MakeResultData(i interface{}) define.Result {
+	jdata, err := json.Marshal(i)
+	if err != nil {
+		return define.NewError(define.CodeType_InternalError, err.Error())
+	}
+	return define.NewResultOK(jdata, "")
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"math/big"
+	"time"
 )
 
 func (hd *Handler) SendTransactions(ctx *gin.Context) {
@@ -25,11 +26,10 @@ func (hd *Handler) SendTransactions(ctx *gin.Context) {
 	tx.Actions = make([]*define.Action, ops)
 
 	var privkeys []*ecdsa.PrivateKey
-	for _, v := range tdata.Actions {
+	for i, v := range tdata.Actions {
 		var action define.Action
 		action.ID = uint8(v.ID)
-		//action.Type = uint8(v.From)
-
+		action.Time = time.Now()
 		action.From = ethcmn.HexToAddress(v.From)
 		action.To = ethcmn.HexToAddress(v.To)
 		action.Amount, _ = new(big.Int).SetString(v.Amount, 10)
@@ -41,6 +41,7 @@ func (hd *Handler) SendTransactions(ctx *gin.Context) {
 		action.Behavior.Direction = v.Behavior.Direction
 		copy(action.Behavior.Memo[:], []byte(v.Behavior.Memo))
 
+		tx.Actions[i] = &action
 		privkey, _ := crypto.ToECDSA(ethcmn.Hex2Bytes(v.Priv))
 		privkeys = append(privkeys, privkey)
 	}
@@ -61,5 +62,6 @@ func (hd *Handler) SendTransactions(ctx *gin.Context) {
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
-	hd.responseWrite(ctx, true, result)
+
+	hd.responseWrite(ctx, true, string(result.DeliverTx.Data))
 }

@@ -143,7 +143,7 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 		app.blockExeInfo.txDatas = append(app.blockExeInfo.txDatas, &txData)
 	}
 
-	return abcitypes.ResponseDeliverTx{Code: code.CodeTypeOK}
+	return abcitypes.ResponseDeliverTx{Code: code.CodeTypeOK, Data: []byte(txHash.Hex())}
 }
 
 func (app *BTApplication) commitState() (ethcmn.Hash, error) {
@@ -225,17 +225,19 @@ func (app *BTApplication) Query(reqQuery abcitypes.RequestQuery) (resQuery abcit
 
 	switch reqQuery.Path {
 	case QUERY_TX:
-		value, err := app.QueryTx(reqQuery.Data)
+		result := app.QueryTx(reqQuery.Data)
+		b, err := rlp.EncodeToBytes(&result)
 		if err != nil {
-			return abcitypes.ResponseQuery{Code: code.CodeTypeExec, Log: err.Error()}
+			return abcitypes.ResponseQuery{Code: code.CodeTypeEncodingError, Log: err.Error()}
 		}
-		return abcitypes.ResponseQuery{Value: value}
+		return abcitypes.ResponseQuery{Value: b}
 	case QUERY_ACCOUNT:
-		value, err := app.QueryAccount(reqQuery.Data)
+		result := app.QueryAccount(reqQuery.Data)
+		b, err := rlp.EncodeToBytes(&result)
 		if err != nil {
-			return abcitypes.ResponseQuery{Code: code.CodeTypeExec, Log: err.Error()}
+			return abcitypes.ResponseQuery{Code: code.CodeTypeEncodingError, Log: err.Error()}
 		}
-		return abcitypes.ResponseQuery{Value: value}
+		return abcitypes.ResponseQuery{Value: b}
 	default:
 		app.logger.Warn("ABCI Query", zap.String("code", "CodeUnknownPath"))
 		return abcitypes.ResponseQuery{Code: code.CodeUnknownPath, Log: "CodeUnknownPath"}

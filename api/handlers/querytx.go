@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"github.com/axengine/btchain"
 	"github.com/axengine/btchain/define"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -59,12 +60,25 @@ func (hd *Handler) queryTxs(ctx *gin.Context, account, txhash, cursor, limit, or
 		return
 	}
 
-	result, err := hd.client.ABCIQuery(btchain.QUERY_ACCOUNT, bys)
+	result, err := hd.client.ABCIQuery(btchain.QUERY_TX, bys)
 	if err != nil {
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
-	hd.responseWrite(ctx, true, result)
+
+	var data define.Result
+	err = rlp.DecodeBytes(result.Response.Value, &data)
+	if err != nil {
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+
+	resData := make(map[string]interface{}, 0)
+	if err := json.Unmarshal(data.Data, &resData); err != nil {
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+	hd.responseWrite(ctx, true, &resData)
 }
 
 func (hd *Handler) QueryTxs(ctx *gin.Context) {

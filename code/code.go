@@ -1,3 +1,4 @@
+// ABCI RPC 内部错误代码 业务无关
 package code
 
 const (

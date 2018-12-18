@@ -17,3 +17,8 @@ type TxQuery struct {
 	TxHash  ethcmn.Hash
 	Account ethcmn.Address
 }
+
+type BlockAccount struct {
+	Addr    string `json:"address"`
+	Balance string `json:"balance"`
+}

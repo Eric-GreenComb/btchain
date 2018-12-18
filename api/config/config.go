@@ -7,7 +7,7 @@ import (
 type Config struct {
 	Bind         string
 	RPC          string
-	AdminPubKey  string
+	AdminAddress string
 	AdminPrivKey string
 	Log          LogInfo
 }

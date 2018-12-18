@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/axengine/btchain"
+	"github.com/axengine/btchain/define"
 	ethcmn "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"strings"
 )
 
@@ -23,5 +27,19 @@ func (hd *Handler) QueryAccount(ctx *gin.Context) {
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
-	hd.responseWrite(ctx, true, result)
+
+	var data define.Result
+	err = rlp.DecodeBytes(result.Response.Value, &data)
+	if err != nil {
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+
+	resData := make(map[string]interface{}, 0)
+	if err := json.Unmarshal(data.Data, &resData); err != nil {
+		hd.responseWrite(ctx, false, err.Error())
+		hd.logger.Error("resData", zap.String("data", string(data.Data)))
+		return
+	}
+	hd.responseWrite(ctx, true, &resData)
 }
