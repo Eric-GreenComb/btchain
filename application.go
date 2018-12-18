@@ -32,6 +32,7 @@ type BTApplication struct {
 	stateDup *stateDup
 	chainDb  ethdb.Database
 	dataM    *datamanager.DataManager
+	logger   *zap.Logger
 }
 
 type blockExeInfo struct {
@@ -68,7 +69,8 @@ func (app *BTApplication) init() {
 		panic("On init yaml:" + err.Error())
 	}
 
-	logger = log.Initialize("file", "debug", path.Join(cfg.Log.Path, "node.output.log"), path.Join(cfg.Log.Path, "node.err.log"))
+	logger = log.Initialize("file", "debug", path.Join(cfg.Log.Path, "node.debug.log"), path.Join(cfg.Log.Path, "node.error.log"))
+	app.logger = logger
 
 	//level db
 	if app.chainDb, err = OpenDatabase(cfg.DB.Path, "chaindata", LDatabaseCache, LDatabaseHandles); err != nil {

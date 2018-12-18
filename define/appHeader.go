@@ -11,6 +11,7 @@ import (
 type AppHeader struct {
 	PrevHash  ethcmn.Hash // global, just used to calculate header-hash
 	StateRoot ethcmn.Hash // fill after statedb commit
+	BlockHash ethcmn.Hash //区块hash
 	Height    uint64      // refresh by new block
 	TxCount   uint64      // fill when ready to save
 	OpCount   uint64      // fill when ready to save

@@ -9,7 +9,7 @@ type Transaction struct {
 type Action struct {
 	ID       int      //最大255,必须从1开始填写
 	From     string   //from 公钥
-	Sign     string   //from 私钥
+	Priv     string   //from 私钥
 	To       string   //目标帐户
 	Amount   string   //金额 无小数
 	Behavior Behavior //行为价值
@@ -21,6 +21,7 @@ type Behavior struct {
 	NodeID     string `json:"node_id"`     //节点ID
 	PartnerID  string `json:"partner_id"`  //商户ID
 	BehaviorID string `json:"behavior_id"` //行为ID
+	Direction  uint8  `json:"behavior_id"` //
 	Memo       string `json:"memo"`        //备注
 }
 

@@ -21,6 +21,13 @@ type DataManager struct {
 // NewDataManager create data manager
 func NewDataManager(cfg *config.Config, logger *zap.Logger, dbc DBCreator) (*DataManager, error) {
 	qdb := dbc("bt_query.db")
+
+	qt, qi := qdb.GetInitSQLs()
+	err := qdb.PrepareTables(qt, qi)
+	if err != nil {
+		return nil, err
+	}
+
 	dm := &DataManager{
 		qdb: qdb,
 	}

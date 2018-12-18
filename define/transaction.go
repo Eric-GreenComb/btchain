@@ -1,10 +1,10 @@
 package define
 
 import (
-	"github.com/axengine/go-amino"
+	"fmt"
 	ethcmn "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"math/big"
+	"time"
 )
 
 // TransactionData 交易表
@@ -32,31 +32,28 @@ type TransactionData struct {
 }
 
 type Behavior struct {
-	GenAt      uint64 `json:"created_at"`  //行为发生时间
-	OrderID    uint32 `json:"order_id"`    //订单ID
-	NodeID     uint32 `json:"node_id"`     //节点ID
-	PartnerID  uint32 `json:"partner_id"`  //商户ID
-	BehaviorID uint32 `json:"behavior_id"` //行为ID
-	Direction  uint8  `json:"direction"`   //行为方向 0:FROM->TO 1:TO->FROM
+	GenAt      uint64    `json:"created_at"`  //行为发生时间
+	OrderID    [128]byte `json:"order_id"`    //订单ID
+	NodeID     [20]byte  `json:"node_id"`     //节点ID
+	PartnerID  [20]byte  `json:"partner_id"`  //商户ID
+	BehaviorID [20]byte  `json:"behavior_id"` //行为ID
+	Direction  uint8     `json:"direction"`   //行为方向 0:FROM->TO 1:TO->FROM
+	Memo       [64]byte  `json:"memo"`
 }
 
 // 通过Transaction 计算txhash
 type Transaction struct {
-	Actions []Action //有序的action 按照ID ASC序
+	Actions []*Action //有序的action 按照ID ASC序
 }
 
-// todo 待测试
-func (tx *Transaction) Hash() (h ethcmn.Hash) {
-	hw := sha3.NewKeccak256()
-	b, _ := amino.MarshalBinaryBare(tx)
-	hw.Write(b)
-	hw.Sum(h[:0])
-	return
+func (p *Transaction) String() string {
+	return fmt.Sprintf("tx:%v actions:%v",
+		p.SigHash().Hex(), p.Len())
 }
 
 type Action struct {
-	ID       uint8 //最大支持255笔交易
-	Type     uint8 //操作类型 0-开户 1-交易
+	ID       uint8     //最大支持255笔交易
+	Time     time.Time //时间
 	From     ethcmn.Address
 	To       ethcmn.Address
 	Amount   *big.Int
