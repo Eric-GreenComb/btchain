@@ -4,7 +4,6 @@ import (
 	"fmt"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"math/big"
-	"time"
 )
 
 // TransactionData 交易表
@@ -19,26 +18,15 @@ type TransactionData struct {
 	BlockHash   ethcmn.Hash    `json:"block_hash"`   //区块HASH
 	ActionCount uint32         `json:"action_count"` //一笔交易多个action
 	ActionID    uint32         `json:"action_id"`    //action id
-	UID         ethcmn.Address `json:"uid"`          //用户ID (if dir==0,uid 表示转入方，否则表示转出方)
-	RelatedUID  ethcmn.Address `json:"related_uid"`  //关联的用户ID
-	Direction   uint8          `json:"direction"`    //方向
+	Src         ethcmn.Address `json:"src"`          //用户ID (if dir==0,uid 表示转入方，否则表示转出方)
+	Dst         ethcmn.Address `json:"dst"`          //关联的用户ID
 	Nonce       uint64         `json:"nonce"`        //对应操作源帐户(转出方)NONCE
 	Amount      *big.Int       `json:"amount"`       //金额
 	ResultCode  uint           `json:"result_code"`  //应答码 0-success
 	ResultMsg   string         `json:"result_msg"`   //应答消息
 	CreateAt    uint64         `json:"created_at"`   //入库时间
-	JData       string         `json:"jdata"`        //行为描述 json of struct Behavior
+	JData       string         `json:"jdata"`        //数据部分 建议JSON序列化
 	Memo        string         `json:"memo"`         //交易备注
-}
-
-type Behavior struct {
-	GenAt      uint64    `json:"created_at"`  //行为发生时间
-	OrderID    [128]byte `json:"order_id"`    //订单ID
-	NodeID     [20]byte  `json:"node_id"`     //节点ID
-	PartnerID  [20]byte  `json:"partner_id"`  //商户ID
-	BehaviorID [20]byte  `json:"behavior_id"` //行为ID
-	Direction  uint8     `json:"direction"`   //行为方向 0:FROM->TO 1:TO->FROM
-	Memo       [64]byte  `json:"memo"`
 }
 
 // 通过Transaction 计算txhash
@@ -52,13 +40,14 @@ func (p *Transaction) String() string {
 }
 
 type Action struct {
-	ID       uint8     //最大支持255笔交易
-	Time     time.Time //时间
-	From     ethcmn.Address
-	To       ethcmn.Address
-	Amount   *big.Int
-	Behavior Behavior
-	SignHex  [65]byte //65 bytes
+	ID        uint8          // 最大支持255笔交易
+	CreatedAt uint64         // 时间
+	Src       ethcmn.Address //
+	Dst       ethcmn.Address //
+	Amount    *big.Int       //
+	Data      string         // 用户数据
+	Memo      string         // 备注
+	SignHex   [65]byte       // 签名 65 bytes
 }
 
 func (p Transaction) Len() int {

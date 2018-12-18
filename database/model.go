@@ -31,9 +31,8 @@ type TxData struct {
 	BlockHash   string `db:"blockhash"`
 	ActionCount uint32 `db:"actioncount"`
 	ActionID    uint32 `db:"actionid"`
-	UID         string `db:"uid"`
-	RelatedUID  string `db:"relateduid"`
-	Direction   uint8  `db:"direction"`
+	Src         string `db:"src"`
+	Dst         string `db:"dst"`
 	Nonce       uint64 `db:"nonce"`
 	Amount      string `db:"amount"`
 	ResultCode  uint   `db:"resultcode"`

@@ -5,11 +5,10 @@ import (
 )
 
 type Config struct {
-	Bind         string
-	RPC          string
-	AdminAddress string
-	AdminPrivKey string
-	Log          LogInfo
+	Bind     string
+	RPC      string
+	ReadOnly bool
+	Log      LogInfo
 }
 
 func New() *Config {

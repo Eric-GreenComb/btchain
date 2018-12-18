@@ -14,8 +14,9 @@ type QueryBase struct {
 }
 type TxQuery struct {
 	QueryBase
-	TxHash  ethcmn.Hash
-	Account ethcmn.Address
+	TxHash    ethcmn.Hash
+	Account   ethcmn.Address
+	Direction uint8
 }
 
 type BlockAccount struct {

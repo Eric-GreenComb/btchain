@@ -1,7 +1,6 @@
 package btchain
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/axengine/btchain/code"
 	"github.com/axengine/btchain/define"
@@ -18,6 +17,7 @@ import (
 )
 
 func (app *BTApplication) InitChain(req abcitypes.RequestInitChain) abcitypes.ResponseInitChain {
+	//tmtypes.Tx{}
 	log.Println("=====>>InitChain")
 	return abcitypes.ResponseInitChain{}
 }
@@ -39,7 +39,6 @@ func (app *BTApplication) Info(req abcitypes.RequestInfo) (resInfo abcitypes.Res
 // CheckTx
 // 初步检查，如果check失败，将不会被打包
 func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
-	//app.logger.Debug("ABCI CheckTx", zap.ByteString("tx", tx[:]))
 	var t define.Transaction
 	if err := rlp.DecodeBytes(tx, &t); err != nil {
 		app.logger.Warn("rlp unmarshal", zap.Error(err), zap.ByteString("tx", tx))
@@ -54,12 +53,12 @@ func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
 			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeOutOfOrder:"+strconv.Itoa(int(action.ID))))
 			return abcitypes.ResponseCheckTx{Code: code.CodeOutOfOrder, Log: "CodeOutOfOrder:" + strconv.Itoa(int(action.ID))}
 		}
-		if !app.stateDup.state.Exist(action.From) {
-			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeAccountNotFound:"+action.From.Hex()))
-			return abcitypes.ResponseCheckTx{Code: code.CodeAccountNotFound, Log: "CodeAccountNotFound:" + action.From.Hex()}
+		if !app.stateDup.state.Exist(action.Src) {
+			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeAccountNotFound:"+action.Src.Hex()))
+			return abcitypes.ResponseCheckTx{Code: code.CodeAccountNotFound, Log: "CodeAccountNotFound:" + action.Src.Hex()}
 		}
 
-		balance := app.stateDup.state.GetBalance(action.From)
+		balance := app.stateDup.state.GetBalance(action.Src)
 		if balance.Cmp(action.Amount) < 0 {
 			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeNotEnoughMoney:"+balance.String()))
 			return abcitypes.ResponseCheckTx{Code: code.CodeNotEnoughMoney, Log: "CodeNotEnoughMoney:" + balance.String()}
@@ -72,7 +71,8 @@ func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
 		return abcitypes.ResponseCheckTx{Code: code.CodeSignerFaild, Log: "CodeSignerFaild:" + err.Error()}
 	}
 
-	return abcitypes.ResponseCheckTx{Code: code.CodeTypeOK, GasWanted: 1}
+	app.logger.Info("ABCI CheckTx", zap.String("hash", t.SigHash().Hex()))
+	return abcitypes.ResponseCheckTx{Code: code.CodeTypeOK, GasWanted: 1, Data: t.SigHash().Bytes()}
 }
 
 // BeginBlock
@@ -105,25 +105,25 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 	actionCount := t.Len()
 	for _, action := range t.Actions {
 		//自动创建to
-		if !app.stateDup.state.Exist(action.To) {
-			app.stateDup.state.CreateAccount(action.To)
+		if !app.stateDup.state.Exist(action.Dst) {
+			app.stateDup.state.CreateAccount(action.Dst)
 		}
 
 		//取nonce
-		nonce := app.stateDup.state.GetNonce(action.From)
+		nonce := app.stateDup.state.GetNonce(action.Src)
 
 		//必须再次校验余额
-		balance := app.stateDup.state.GetBalance(action.From)
+		balance := app.stateDup.state.GetBalance(action.Src)
 		if balance.Cmp(action.Amount) < 0 {
 			app.stateDup.state.RevertToSnapshot(stateSnapshot)
-			app.logger.Warn("ABCI DeliverTx", zap.String("err", "CodeNotEnoughMoney"), zap.String("from", action.From.Hex()), zap.String("amount", balance.String()))
+			app.logger.Warn("ABCI DeliverTx", zap.String("err", "CodeNotEnoughMoney"), zap.String("src", action.Src.Hex()), zap.String("amount", balance.String()))
 			return abcitypes.ResponseDeliverTx{Code: code.CodeNotEnoughMoney, Log: "not enough money"}
 		}
 
 		//资金操作
-		app.stateDup.state.SubBalance(action.From, action.Amount)
-		app.stateDup.state.AddBalance(action.To, action.Amount)
-		app.stateDup.state.SetNonce(action.From, nonce+1)
+		app.stateDup.state.SubBalance(action.Src, action.Amount)
+		app.stateDup.state.AddBalance(action.Dst, action.Amount)
+		app.stateDup.state.SetNonce(action.Src, nonce+1)
 
 		var txData define.TransactionData
 		txData.TxHash = txHash
@@ -131,19 +131,18 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 		txData.BlockHash = app.tempHeader.BlockHash
 		txData.ActionCount = uint32(actionCount)
 		txData.ActionID = uint32(action.ID)
-		txData.UID = action.From
-		txData.RelatedUID = action.To
+		txData.Src = action.Src
+		txData.Dst = action.Dst
 		txData.Nonce = nonce
-		txData.Direction = action.Behavior.Direction
 		txData.Amount = action.Amount
-		txData.CreateAt = action.Behavior.GenAt
-		b, _ := json.Marshal(&action.Behavior)
-		txData.JData = string(b)
+		txData.CreateAt = action.CreatedAt
+		txData.JData = action.Data
+		txData.Memo = action.Memo
 
 		app.blockExeInfo.txDatas = append(app.blockExeInfo.txDatas, &txData)
 	}
 
-	return abcitypes.ResponseDeliverTx{Code: code.CodeTypeOK, Data: []byte(txHash.Hex())}
+	return abcitypes.ResponseDeliverTx{Code: code.CodeTypeOK, Data: txHash.Bytes()}
 }
 
 func (app *BTApplication) commitState() (ethcmn.Hash, error) {
@@ -214,7 +213,7 @@ func (app *BTApplication) Commit() abcitypes.ResponseCommit {
 	app.tempHeader.PrevHash = ethcmn.BytesToHash(appHash)
 	app.tempHeader.StateRoot = stateRoot
 
-	app.logger.Info("ABCI Commit", zap.String("hash", ethcmn.BytesToHash(appHash).Hex()), zap.Uint64("height", app.tempHeader.Height))
+	app.logger.Info("ABCI Commit", zap.String("hash", ethcmn.BytesToHash(appHash).Hex()), zap.Uint64("height", app.currentHeader.Height))
 	return abcitypes.ResponseCommit{Data: appHash}
 }
 

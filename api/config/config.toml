@@ -2,7 +2,7 @@ bind = ":10000"
 rpc = "127.0.0.1:26657"
 adminAddress = "0x061a060880BB4E5AD559350203d60a4349d3Ecd6"
 adminPrivKey = "5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033"
-
+readOnly = false
 
 [log]
 path = "./log/"

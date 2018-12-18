@@ -2,12 +2,18 @@ package gunit
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"github.com/axengine/btchain/bean"
+	"github.com/axengine/btchain/define"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tendermint/tendermint/rpc/client"
 	"io/ioutil"
+	"log"
+	"math/big"
 	"net/http"
 	"testing"
 	"time"
@@ -23,23 +29,19 @@ func Test_transaction(t *testing.T) {
 
 	var action bean.Action
 	action.ID = 0
-	action.From = "0x061a060880BB4E5AD559350203d60a4349d3Ecd6"
-	action.To = "0xA15d837e862cD9CacEF81214617D7Bb3B6270701"
+	action.Src = "0x061a060880BB4E5AD559350203d60a4349d3Ecd6"
+	action.Dst = "0xA15d837e862cD9CacEF81214617D7Bb3B6270701"
 	action.Amount = "100"
 	action.Priv = "5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033"
-	action.Behavior.GenAt = uint64(time.Now().UnixNano())
-	action.Behavior.Direction = 1
-	action.Behavior.NodeID = "NODE0000001"
-	action.Behavior.PartnerID = "PARTNER000001"
-	action.Behavior.BehaviorID = "12345678901212321"
-	action.Behavior.OrderID = "IAMAORDERID000001233423000000000000001"
-	action.Behavior.Memo = "FOR TEST"
+	action.Data = "沧海一声笑,滔滔两岸潮,浮沉随浪只记今朝;苍天笑,纷纷世上潮,谁负谁胜出天知晓;江山笑,烟雨遥,涛浪淘尽红尘俗世几多娇;清风笑,竟惹寂寥,豪情还剩了一襟晚照;苍生笑,不再寂寥,豪情仍在痴痴笑笑"
 
 	tdata.Actions = append(tdata.Actions, action)
 
 	b, _ := json.Marshal(&tdata)
 
-	resp, err := http.Post(BASE_API_URL+"transactions", "application/json", bytes.NewReader(b))
+	fmt.Println(string(b))
+
+	resp, err := http.Post(BASE_API_URL+"transactionsCommit", "application/json", bytes.NewReader(b))
 	if err != nil {
 		panic(err)
 	}
@@ -56,25 +58,42 @@ func Test_transaction(t *testing.T) {
 }
 
 func Test_address(t *testing.T) {
-	//privateKey, _ := crypto.GenerateKey()
-	//address := crypto.PubkeyToAddress(privateKey.PublicKey)
-	//compress := crypto.CompressPubkey(&privateKey.PublicKey)
-	//fmt.Println(address)
+	var tx define.Transaction
+	var action define.Action
+	var privkeys []*ecdsa.PrivateKey
 
-	//a8971729fbc199fb3459529cebcd8704791fc699d88ac89284f23ff8e7fca7d6
-	//pubkey, err := crypto.DecompressPubkey(ethcmn.Hex2Bytes("02865c395bfd104394b786a264662d02177897391aba1155f854cb1065b6a444e5"))
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//address := crypto.PubkeyToAddress(*pubkey)
-	//fmt.Println(address.Hex())
+	action.CreatedAt = uint64(time.Now().UnixNano())
+	action.ID = 0
+	action.Src = ethcmn.HexToAddress("0x061a060880BB4E5AD559350203d60a4349d3Ecd6")
+	action.Dst = ethcmn.HexToAddress("0x061a060880BB4E5AD559350203d60a4349d3Ecd7")
+	action.Amount, _ = new(big.Int).SetString("1", 10)
+	action.Data = "hello world"
+	action.Memo = "for test"
+	tx.Actions = append(tx.Actions, &action)
 
-	privkey, _ := crypto.GenerateKey()
-	buff := make([]byte, 32)
-	copy(buff[32-len(privkey.D.Bytes()):], privkey.D.Bytes())
-	fmt.Println(ethcmn.Bytes2Hex(buff))
-	fmt.Println(ethcmn.Bytes2Hex(crypto.CompressPubkey(&privkey.PublicKey)))
-	fmt.Println(crypto.PubkeyToAddress(privkey.PublicKey).Hex())
+	privkey, err := crypto.ToECDSA(ethcmn.Hex2Bytes("5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	privkeys = append(privkeys, privkey)
 
+	tx.Sign(privkeys)
+
+	b, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	begin := time.Now()
+	client := client.NewHTTP("192.168.8.144:26657", "/websocket")
+	//result, err := client.BroadcastTxAsync(b)  //mempool.checkTx
+	result, err := client.BroadcastTxSync(b) //checkTx
+	//result, err := client.BroadcastTxCommit(b) //commit
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Println("use", time.Since(begin))
+	log.Println("code", result.Code)
+	log.Println("data", ethcmn.BytesToHash(result.Data).Hex())
+	log.Println("log", result.Log)
+	log.Println("hash", ethcmn.BytesToHash(result.Hash).Hex())
 }

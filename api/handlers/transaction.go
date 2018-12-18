@@ -13,11 +13,10 @@ import (
 	"time"
 )
 
-func (hd *Handler) SendTransactions(ctx *gin.Context) {
+func (hd *Handler) makeTx(ctx *gin.Context) (*define.Transaction, error) {
 	var tdata bean.Transaction
 	if err := ctx.BindJSON(&tdata); err != nil {
-		hd.responseWrite(ctx, false, err.Error())
-		return
+		return nil, err
 	}
 
 	ops := len(tdata.Actions)
@@ -29,28 +28,40 @@ func (hd *Handler) SendTransactions(ctx *gin.Context) {
 	for i, v := range tdata.Actions {
 		var action define.Action
 		action.ID = uint8(v.ID)
-		action.Time = time.Now()
-		action.From = ethcmn.HexToAddress(v.From)
-		action.To = ethcmn.HexToAddress(v.To)
+		action.CreatedAt = uint64(time.Now().UnixNano())
+		action.Src = ethcmn.HexToAddress(v.Src)
+		action.Dst = ethcmn.HexToAddress(v.Dst)
 		action.Amount, _ = new(big.Int).SetString(v.Amount, 10)
-		action.Behavior.GenAt = v.Behavior.GenAt
-		copy(action.Behavior.OrderID[:], []byte(v.Behavior.OrderID))
-		copy(action.Behavior.NodeID[:], []byte(v.Behavior.NodeID))
-		copy(action.Behavior.PartnerID[:], []byte(v.Behavior.PartnerID))
-		copy(action.Behavior.BehaviorID[:], []byte(v.Behavior.BehaviorID))
-		action.Behavior.Direction = v.Behavior.Direction
-		copy(action.Behavior.Memo[:], []byte(v.Behavior.Memo))
+		action.Data = v.Data
+		action.Memo = v.Memo
 
 		tx.Actions[i] = &action
-		privkey, _ := crypto.ToECDSA(ethcmn.Hex2Bytes(v.Priv))
+		privkey, err := crypto.ToECDSA(ethcmn.Hex2Bytes(v.Priv))
+		if err != nil {
+			return nil, err
+		}
 		privkeys = append(privkeys, privkey)
 	}
-
 	//签名
 	tx.Sign(privkeys)
 
+	return &tx, nil
+}
+
+func (hd *Handler) SendTransactionsCommit(ctx *gin.Context) {
+	tx, err := hd.makeTx(ctx)
+	if err != nil {
+		hd.logger.Error("makeTx", zap.Error(err))
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+
+	if hd.chechTx(tx.SigHash().Hex()) {
+		hd.responseWrite(ctx, false, "repeat tx")
+		return
+	}
+
 	b, err := rlp.EncodeToBytes(tx)
-	//b, err := json.Marshal(tx)
 	if err != nil {
 		hd.logger.Error("MarshalBinaryBare", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
@@ -63,5 +74,73 @@ func (hd *Handler) SendTransactions(ctx *gin.Context) {
 		return
 	}
 
-	hd.responseWrite(ctx, true, string(result.DeliverTx.Data))
+	hd.responseWrite(ctx, true, ethcmn.BytesToHash(result.DeliverTx.Data).Hex())
+}
+
+func (hd *Handler) SendTransactionsAsync(ctx *gin.Context) {
+	tx, err := hd.makeTx(ctx)
+	if err != nil {
+		hd.logger.Error("makeTx", zap.Error(err))
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+
+	if hd.chechTx(tx.SigHash().Hex()) {
+		hd.responseWrite(ctx, false, "repeat tx")
+		return
+	}
+
+	b, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		hd.logger.Error("MarshalBinaryBare", zap.Error(err))
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+
+	result, err := hd.client.BroadcastTxAsync(b)
+	if err != nil {
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+	hd.responseWrite(ctx, true, ethcmn.BytesToHash(result.Hash).Hex())
+}
+
+func (hd *Handler) SendTransactionsSync(ctx *gin.Context) {
+	tx, err := hd.makeTx(ctx)
+	if err != nil {
+		hd.logger.Error("makeTx", zap.Error(err))
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+
+	if hd.chechTx(tx.SigHash().Hex()) {
+		hd.responseWrite(ctx, false, "repeat tx")
+		return
+	}
+
+	b, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		hd.logger.Error("MarshalBinaryBare", zap.Error(err))
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+
+	result, err := hd.client.BroadcastTxSync(b)
+	if err != nil {
+		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+
+	hd.responseWrite(ctx, true, ethcmn.BytesToHash(result.Data).Hex())
+}
+
+// chckeTx return true if the hash exist
+func (hd *Handler) chechTx(hash string) bool {
+	hd.mu.Lock()
+	defer hd.mu.Unlock()
+	_, ok := hd.cache.Get(hash)
+	if !ok {
+		hd.cache.Set(hash, hash)
+	}
+	return ok
 }

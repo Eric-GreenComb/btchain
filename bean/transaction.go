@@ -7,22 +7,13 @@ type Transaction struct {
 }
 
 type Action struct {
-	ID       int      //最大255,必须从1开始填写
-	From     string   //from 公钥
-	Priv     string   //from 私钥
-	To       string   //目标帐户
-	Amount   string   //金额 无小数
-	Behavior Behavior //行为价值
-}
-
-type Behavior struct {
-	GenAt      uint64 `json:"created_at"`  //行为发生时间
-	OrderID    string `json:"order_id"`    //订单ID
-	NodeID     string `json:"node_id"`     //节点ID
-	PartnerID  string `json:"partner_id"`  //商户ID
-	BehaviorID string `json:"behavior_id"` //行为ID
-	Direction  uint8  `json:"behavior_id"` //
-	Memo       string `json:"memo"`        //备注
+	ID     int    // 最大255,必须从0开始填写顺序递增
+	Src    string // src 地址
+	Priv   string // src 私钥
+	Dst    string // 目标帐户地址
+	Amount string // 金额 无小数
+	Data   string // 行为价值 最大长度256,大于256只存256字节
+	Memo   string // 最大长度256,大于256只存256字节
 }
 
 type ActionSlice []Action

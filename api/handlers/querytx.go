@@ -7,6 +7,7 @@ import (
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/gin-gonic/gin"
+	"log"
 	"strconv"
 )
 
@@ -21,11 +22,11 @@ func (hd *Handler) QuerySingleTx(ctx *gin.Context) {
 		return
 	}
 
-	hd.queryTxs(ctx, "", txhash, cursor, limit, order)
+	hd.queryTxs(ctx, "", "", txhash, cursor, limit, order)
 
 }
 
-func (hd *Handler) queryTxs(ctx *gin.Context, account, txhash, cursor, limit, order string) {
+func (hd *Handler) queryTxs(ctx *gin.Context, account, direction, txhash, cursor, limit, order string) {
 	var err error
 	var query define.TxQuery
 	if len(cursor) != 0 {
@@ -48,6 +49,8 @@ func (hd *Handler) queryTxs(ctx *gin.Context, account, txhash, cursor, limit, or
 
 	if account != "" {
 		query.Account = ethcmn.HexToAddress(account)
+		drcn, _ := strconv.Atoi(direction)
+		query.Direction = uint8(drcn)
 	}
 	if txhash != "" {
 		query.TxHash = ethcmn.HexToHash(txhash)
@@ -73,7 +76,9 @@ func (hd *Handler) queryTxs(ctx *gin.Context, account, txhash, cursor, limit, or
 		return
 	}
 
-	resData := make(map[string]interface{}, 0)
+	log.Println("data.Data", string(data.Data))
+	//resData := make(map[string]interface{}, 0)
+	resData := make([]define.TransactionData, 0)
 	if err := json.Unmarshal(data.Data, &resData); err != nil {
 		hd.responseWrite(ctx, false, err.Error())
 		return
@@ -85,7 +90,21 @@ func (hd *Handler) QueryTxs(ctx *gin.Context) {
 	cursor := ctx.Query("cursor")
 	limit := ctx.Query("limit")
 	order := ctx.Query("order")
-	hd.queryTxs(ctx, "", "", cursor, limit, order)
+	hd.queryTxs(ctx, "", "", "", cursor, limit, order)
+}
+
+func (hd *Handler) QueryAccTxsByDirection(ctx *gin.Context) {
+	cursor := ctx.Query("cursor")
+	limit := ctx.Query("limit")
+	order := ctx.Query("order")
+	account := ctx.Param("address")
+	direction := ctx.Param("direction")
+	if account == "" {
+		hd.responseWrite(ctx, false, "param account is required")
+		return
+	}
+
+	hd.queryTxs(ctx, account, direction, "", cursor, limit, order)
 }
 
 func (hd *Handler) QueryAccTxs(ctx *gin.Context) {
@@ -93,11 +112,10 @@ func (hd *Handler) QueryAccTxs(ctx *gin.Context) {
 	limit := ctx.Query("limit")
 	order := ctx.Query("order")
 	account := ctx.Param("address")
-
 	if account == "" {
 		hd.responseWrite(ctx, false, "param account is required")
 		return
 	}
 
-	hd.queryTxs(ctx, account, "", cursor, limit, order)
+	hd.queryTxs(ctx, account, "", "", cursor, limit, order)
 }

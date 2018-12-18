@@ -3,7 +3,6 @@ package define
 import (
 	"crypto/ecdsa"
 	"errors"
-	"fmt"
 	"github.com/axengine/go-amino"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -19,13 +18,12 @@ func (tx *Transaction) SigHash() (h ethcmn.Hash) {
 	var signTx Transaction
 	for _, v := range tx.Actions {
 		var action Action
-		action.Time = v.Time
 		action.ID = v.ID
-		//action.Type = v.Type
-		action.From = v.From
-		action.To = v.To
+		action.CreatedAt = v.CreatedAt
+		action.Src = v.Src
+		action.Dst = v.Dst
 		action.Amount = v.Amount
-		action.Behavior = v.Behavior
+		action.Data = v.Data
 		signTx.Actions = append(signTx.Actions, &action)
 	}
 	hw := sha3.NewKeccak256()
@@ -44,7 +42,7 @@ func (tx *Transaction) sign(privkeys []*ecdsa.PrivateKey) ([]TxSignature, error)
 		if err != nil {
 			return signatures, err
 		}
-		fmt.Println("sign hash:", tx.SigHash().Hex(), " priv:", v, " sign:", sig)
+		//fmt.Println("sign hash:", tx.SigHash().Hex(), " priv:", v, " sign:", sig)
 		signatures[i] = TxSignature{Sig: sig}
 	}
 
@@ -53,11 +51,8 @@ func (tx *Transaction) sign(privkeys []*ecdsa.PrivateKey) ([]TxSignature, error)
 
 func (tx *Transaction) Sign(privkeys []*ecdsa.PrivateKey) error {
 	signatures, err := tx.sign(privkeys)
-	//log.Println("signatures=", signatures)
 	for i, v := range tx.Actions {
 		copy(v.SignHex[:], signatures[i].Sig)
-		//log.Println("v.SignHex[:]=", v.SignHex[:])
-		//log.Println("signatures[i].Sig=", signatures[i].Sig)
 	}
 
 	return err
@@ -69,7 +64,7 @@ func Signer(tx *Transaction, sig []byte) (ethcmn.Address, error) {
 	}
 
 	sigHash := tx.SigHash()
-	fmt.Println("signer hash:", tx.SigHash().Hex(), " sign:", sig)
+	//fmt.Println("signer hash:", tx.SigHash().Hex(), " sign:", sig)
 	publicKey, err := crypto.Ecrecover(sigHash.Bytes(), sig)
 	if err != nil {
 		return ethcmn.Address{}, err

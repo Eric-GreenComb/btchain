@@ -25,9 +25,9 @@ func (app *BTApplication) QueryTx(tx []byte) define.Result {
 		app.logger.Debug("rlp.DecodeBytes", zap.Error(err))
 		return define.NewError(define.CodeType_EncodingError, err.Error())
 	}
-
+	app.logger.Debug("QueryTx", zap.String("hash", query.TxHash.Hex()), zap.String("address", query.Account.Hex()))
 	if query.Account != ZERO_ADDRESS {
-		result, err := app.dataM.QueryAccountTxs(&query.Account, query.Cursor, query.Limit, query.Order)
+		result, err := app.dataM.QueryAccountTxs(&query.Account, query.Direction, query.Cursor, query.Limit, query.Order)
 		if err != nil {
 			return define.NewError(define.CodeType_InternalError, err.Error())
 		}
@@ -48,8 +48,8 @@ func (app *BTApplication) QueryTx(tx []byte) define.Result {
 	return MakeResultData(result)
 }
 
-func (app *BTApplication) QueryAccount(from []byte) define.Result {
-	address := ethcmn.HexToAddress(string(from))
+func (app *BTApplication) QueryAccount(addr []byte) define.Result {
+	address := ethcmn.HexToAddress(string(addr))
 
 	if !app.stateDup.state.Exist(address) {
 		return define.NewError(define.CodeType_UnknownAccount, address.Hex())

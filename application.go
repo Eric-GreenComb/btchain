@@ -33,6 +33,7 @@ type BTApplication struct {
 	chainDb  ethdb.Database
 	dataM    *datamanager.DataManager
 	logger   *zap.Logger
+	cfg      *config.Config
 }
 
 type blockExeInfo struct {
@@ -68,6 +69,7 @@ func (app *BTApplication) init() {
 	if err := cfg.Init("./config.toml"); err != nil {
 		panic("On init yaml:" + err.Error())
 	}
+	app.cfg = cfg
 
 	logger = log.Initialize("file", "debug", path.Join(cfg.Log.Path, "node.debug.log"), path.Join(cfg.Log.Path, "node.error.log"))
 	app.logger = logger
@@ -209,4 +211,33 @@ func (app *BTApplication) SaveDBData() error {
 	}
 
 	return nil
+}
+
+func (app *BTApplication) DBSwitch() {
+	//c := cron.New()
+	//spec := "0 0 0 * * ?"
+	//err := c.AddFunc(spec, func() {
+	//	app.dBSwitch()
+	//})
+	//if err != nil {
+	//	app.logger.Error("cron", zap.Error(err))
+	//}
+	//
+	//c.Start()
+}
+
+func (app *BTApplication) dBSwitch() {
+	dataM, err := datamanager.NewDataManager(app.cfg, app.logger, func(dbname string) database.Database {
+		dbi := &basesql.Basesql{}
+		err := dbi.Init(dbname, app.cfg, app.logger)
+		if err != nil {
+			panic(err)
+		}
+		return dbi
+	})
+	if err != nil {
+		app.logger.Error("DBSwitch", zap.Error(err))
+		return
+	}
+	app.dataM = dataM
 }

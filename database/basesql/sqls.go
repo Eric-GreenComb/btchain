@@ -39,9 +39,9 @@ var (
 
 		// indexs for table transactions
 		"CREATE INDEX IF NOT EXISTS idx_txhash ON transactions (txhash)",
-		"CREATE INDEX IF NOT EXISTS idx_uid ON transactions (uid)",
-		"CREATE INDEX IF NOT EXISTS idx_ruid ON transactions (relateduid)",
-		"CREATE INDEX IF NOT EXISTS idx_direction ON transactions (direction)",
+		"CREATE INDEX IF NOT EXISTS idx_height ON transactions (blockheight)",
+		"CREATE INDEX IF NOT EXISTS idx_src ON transactions (src)",
+		"CREATE INDEX IF NOT EXISTS idx_dst ON transactions (dst)",
 		"CREATE INDEX IF NOT EXISTS idx_createdat ON transactions (createdat)",
 
 		// indexs for table actions
@@ -110,9 +110,8 @@ const (
 		blockhash   VARCHAR( 64 )  NOT NULL,
 		actioncount INT            NOT NULL,
 		actionid    INT            NOT NULL,
-		uid         VARCHAR( 66 )  NOT NULL,
-		relateduid  VARCHAR( 66 )  NOT NULL,
-		direction   INT            NOT NULL,
+		src        VARCHAR( 42 )  NOT NULL,
+		dst          VARCHAR( 42 )  NOT NULL,
 		nonce       INTEGER        NOT NULL,
 		amount      TEXT           NOT NULL,
 		resultcode  INT            NOT NULL,
