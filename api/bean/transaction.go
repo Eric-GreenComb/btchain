@@ -2,6 +2,9 @@
 package bean
 
 import (
+	"github.com/axengine/go-amino"
+	ethcmn "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"strconv"
 )
 
@@ -38,6 +41,14 @@ func (p Transaction) Less(i, j int) bool {
 
 func (p Transaction) Swap(i, j int) {
 	p.Actions[i], p.Actions[j] = p.Actions[j], p.Actions[i]
+}
+
+func (p Transaction) Hash() (h ethcmn.Hash) {
+	hw := sha3.NewKeccak256()
+	b, _ := amino.MarshalBinaryBare(&p)
+	hw.Write(b)
+	hw.Sum(h[:0])
+	return
 }
 
 type Response struct {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	"github.com/axengine/btchain/api/bean"
 	"github.com/axengine/btchain/define"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -20,6 +21,10 @@ func (hd *Handler) makeTx(ctx *gin.Context) (*define.Transaction, error) {
 		return nil, err
 	}
 	sort.Sort(&tdata)
+
+	if hd.chechTx(tdata.Hash().Hex()) {
+		return nil, errors.New("repeat tx:" + tdata.Hash().Hex())
+	}
 
 	ops := len(tdata.Actions)
 
@@ -58,11 +63,6 @@ func (hd *Handler) SendTransactionsCommit(ctx *gin.Context) {
 		return
 	}
 
-	if hd.chechTx(tx.SigHash().Hex()) {
-		hd.responseWrite(ctx, false, "repeat tx")
-		return
-	}
-
 	b, err := rlp.EncodeToBytes(tx)
 	if err != nil {
 		hd.logger.Error("MarshalBinaryBare", zap.Error(err))
@@ -94,11 +94,6 @@ func (hd *Handler) SendTransactionsAsync(ctx *gin.Context) {
 		return
 	}
 
-	if hd.chechTx(tx.SigHash().Hex()) {
-		hd.responseWrite(ctx, false, "repeat tx")
-		return
-	}
-
 	b, err := rlp.EncodeToBytes(tx)
 	if err != nil {
 		hd.logger.Error("MarshalBinaryBare", zap.Error(err))
@@ -123,11 +118,6 @@ func (hd *Handler) SendTransactionsSync(ctx *gin.Context) {
 	if err != nil {
 		hd.logger.Error("makeTx", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
-		return
-	}
-
-	if hd.chechTx(tx.SigHash().Hex()) {
-		hd.responseWrite(ctx, false, "repeat tx")
 		return
 	}
 
