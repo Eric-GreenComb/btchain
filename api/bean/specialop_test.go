@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	BASE_API_URL = "http://192.168.8.144:10000/v1/"
+	BASE_API_URL = "http://192.168.1.2:10000/v1/"
 )
 
 func Test_specialop(t *testing.T) {
 	var op SpecilOP
 	//op.Pubkey = "46aGd1erHRoDu/aKTqAerWKYEaxxaJiRI/xdFt3Anyc="
-	op.Pubkey = "fwk1MMO8cIE3ogFEMdKO8BrWlrlKeSZ/Jit9rKYoMPU="
-	op.Power = 1
+	op.Pubkey = "JYnWLYSQkDxfrblXY1gXwxDGBfMwHr4tGORLSjsaOtY="
+	op.Power = "0"
 
 	b, _ := json.Marshal(&op)
 	resp, err := http.Post(BASE_API_URL+"specialop", "application/json", bytes.NewReader(b[:]))

@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"encoding/base64"
-	"github.com/axengine/btchain"
 	"github.com/axengine/btchain/api/bean"
 	"github.com/axengine/btchain/define"
+	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -23,41 +23,46 @@ func (hd *Handler) SpecialOP(ctx *gin.Context) {
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
-	power, err := strconv.Atoi(op.Power)
-	if err != nil {
-		hd.responseWrite(ctx, false, err.Error())
-		return
-	}
-
 	if len(b) != 32 {
 		hd.responseWrite(ctx, false, "Err address format")
 		return
 	}
-	var query define.SpecialOP
-	query.Type = "ed25519"
-	query.Power = uint32(power)
-	query.PubKey = b
-
-	var bys []byte
-	bys, err = rlp.EncodeToBytes(&query)
+	_, err = strconv.Atoi(op.Power)
 	if err != nil {
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
 
-	result, err := hd.client.ABCIQuery(btchain.SPECIAL_OP, bys)
+	var tx define.Transaction
+	var action define.Action
+	action.Data = op.Pubkey
+	action.Memo = op.Power
+
+	tx.Type = 1
+	tx.Actions = append(tx.Actions, &action)
+
+	b, err = rlp.EncodeToBytes(&tx)
 	if err != nil {
-		hd.logger.Error("SPECIAL_OP", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
 
-	var data define.Result
-	err = rlp.DecodeBytes(result.Response.Value, &data)
+	result, err := hd.client.BroadcastTxCommit(b)
 	if err != nil {
+		hd.logger.Error("BroadcastTxCommit", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
 
-	hd.responseWrite(ctx, true, &data)
+	if result.CheckTx.Code != define.CodeType_OK {
+		hd.logger.Info("CheckTx", zap.Uint32("code", result.CheckTx.Code))
+		hd.responseWrite(ctx, false, result.CheckTx)
+		return
+	}
+	if result.DeliverTx.Code != define.CodeType_OK {
+		hd.logger.Info("DeliverTx", zap.Uint32("code", result.CheckTx.Code))
+		hd.responseWrite(ctx, false, result.DeliverTx)
+		return
+	}
+	hd.responseWrite(ctx, true, ethcmn.BytesToHash(result.DeliverTx.Data).Hex())
 }

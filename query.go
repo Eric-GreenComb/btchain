@@ -12,7 +12,6 @@ const (
 	QUERY_TX      = "/tx"
 	QUERY_ACCOUNT = "/account"
 	QUERY_NONCE   = "/nonce"
-	SPECIAL_OP    = "/special"
 )
 
 var (

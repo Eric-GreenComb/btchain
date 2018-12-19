@@ -31,6 +31,7 @@ type TransactionData struct {
 
 // 通过Transaction 计算txhash
 type Transaction struct {
+	Type    uint8     //0-默认 1-special op
 	Actions []*Action //有序的action 按照ID ASC序
 }
 

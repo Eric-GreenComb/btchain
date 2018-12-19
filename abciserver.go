@@ -46,6 +46,10 @@ func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
 	sort.Sort(t)
 	app.logger.Debug("ABCI CheckTx", zap.String("tx", t.String()))
 
+	if t.Type == 1 {
+		return abcitypes.ResponseCheckTx{Code: define.CodeType_OK, Data: t.SigHash().Bytes()}
+	}
+
 	//检查每个操作是否合法
 	for i, action := range t.Actions {
 		if i != int(action.ID) {
@@ -93,6 +97,13 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 	}
 	sort.Sort(t)
 	app.logger.Info("ABCI DeliverTx", zap.String("tx", t.String()))
+
+	if t.Type == 1 {
+		if err := app.SpecialOP(&t); err != nil {
+			return abcitypes.ResponseDeliverTx{Code: define.CodeType_InvalidTx, Log: err.Error()}
+		}
+		return abcitypes.ResponseDeliverTx{Code: define.CodeType_OK, Data: t.SigHash().Bytes()}
+	}
 
 	//创建快照
 	stateSnapshot := app.stateDup.state.Snapshot()
@@ -231,13 +242,6 @@ func (app *BTApplication) Query(reqQuery abcitypes.RequestQuery) (resQuery abcit
 		return abcitypes.ResponseQuery{Value: b}
 	case QUERY_ACCOUNT:
 		result := app.QueryAccount(reqQuery.Data)
-		b, err := rlp.EncodeToBytes(&result)
-		if err != nil {
-			return abcitypes.ResponseQuery{Code: define.CodeType_EncodingError, Log: err.Error()}
-		}
-		return abcitypes.ResponseQuery{Value: b}
-	case SPECIAL_OP:
-		result := app.SpecialOP(reqQuery.Data)
 		b, err := rlp.EncodeToBytes(&result)
 		if err != nil {
 			return abcitypes.ResponseQuery{Code: define.CodeType_EncodingError, Log: err.Error()}
