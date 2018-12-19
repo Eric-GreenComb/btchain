@@ -30,5 +30,6 @@ type DBInfo struct {
 }
 
 type LogInfo struct {
+	Env  string
 	Path string
 }

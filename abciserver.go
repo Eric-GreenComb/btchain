@@ -90,7 +90,7 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 		return abcitypes.ResponseDeliverTx{Code: define.CodeType_EncodingError, Log: "CodeType_EncodingError"}
 	}
 	sort.Sort(t)
-	app.logger.Debug("ABCI DeliverTx", zap.String("tx", t.String()))
+	app.logger.Info("ABCI DeliverTx", zap.String("tx", t.String()))
 
 	//创建快照
 	stateSnapshot := app.stateDup.state.Snapshot()
@@ -239,4 +239,10 @@ func (app *BTApplication) Query(reqQuery abcitypes.RequestQuery) (resQuery abcit
 		return abcitypes.ResponseQuery{Code: define.CodeType_UnknownRequest, Log: "CodeType_UnknownRequest"}
 	}
 	return abcitypes.ResponseQuery{Value: []byte(fmt.Sprintf("%v", app.currentHeader.PrevHash))}
+}
+
+// EndBlock
+// https://tendermint.com/docs/spec/abci/apps.html#validator-updates
+func (app *BTApplication) EndBlock(req abcitypes.RequestEndBlock) abcitypes.ResponseEndBlock {
+	return abcitypes.ResponseEndBlock{}
 }

@@ -8,4 +8,5 @@ type = "sqlite3"
 path = "./data/"
 
 [log]
+env = "debug" # production
 path = "./log/"

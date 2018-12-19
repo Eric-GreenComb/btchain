@@ -26,7 +26,7 @@ func main() {
 	tps := flag.Int("t", 100, "transactions per second")
 	actions := flag.Int("actions", 10, "actions per tx")
 	du := flag.Int("d", 300, "durations seconds")
-	clientNum := flag.Int("c", 30, "http client num")
+	clientNum := flag.Int("c", 10, "http client num")
 	flag.Parse()
 	log.Println("tps=", *tps, " action=", *actions, " clientNum=", *clientNum, " du=", *du)
 

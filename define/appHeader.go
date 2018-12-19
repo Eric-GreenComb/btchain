@@ -34,14 +34,12 @@ func (h *AppHeader) Hash() []byte {
 	binary.LittleEndian.PutUint64(b0, h.Height)
 	binary.LittleEndian.PutUint64(b1, h.TxCount)
 	binary.LittleEndian.PutUint64(b2, h.OpCount)
-	//binary.LittleEndian.PutUint64(b3, uint64(h.ClosedAt.UnixNano()))
 	m := map[string][]byte{
 		"PrevHash":  h.PrevHash.Bytes(),
 		"StateRoot": h.StateRoot.Bytes(),
 		"Height":    b0,
 		"TxCount":   b1,
 		"OpCount":   b2,
-		//"ClosedAt":  b3,
 	}
 
 	return merkle.SimpleHashFromMap(m)
