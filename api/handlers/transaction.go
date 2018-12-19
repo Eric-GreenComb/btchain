@@ -72,14 +72,17 @@ func (hd *Handler) SendTransactionsCommit(ctx *gin.Context) {
 
 	result, err := hd.client.BroadcastTxCommit(b)
 	if err != nil {
+		hd.logger.Error("BroadcastTxCommit", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
 	if result.CheckTx.Code != define.CodeType_OK {
+		hd.logger.Info("CheckTx", zap.Uint32("code", result.CheckTx.Code))
 		hd.responseWrite(ctx, false, result.CheckTx)
 		return
 	}
 	if result.DeliverTx.Code != define.CodeType_OK {
+		hd.logger.Info("DeliverTx", zap.Uint32("code", result.CheckTx.Code))
 		hd.responseWrite(ctx, false, result.DeliverTx)
 		return
 	}
@@ -103,10 +106,12 @@ func (hd *Handler) SendTransactionsAsync(ctx *gin.Context) {
 
 	result, err := hd.client.BroadcastTxAsync(b)
 	if err != nil {
+		hd.logger.Error("BroadcastTxAsync", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
 	if result.Code != define.CodeType_OK {
+		hd.logger.Info("BroadcastTxAsync", zap.Uint32("code", result.Code))
 		hd.responseWrite(ctx, false, result)
 		return
 	}
@@ -130,10 +135,12 @@ func (hd *Handler) SendTransactionsSync(ctx *gin.Context) {
 
 	result, err := hd.client.BroadcastTxSync(b)
 	if err != nil {
+		hd.logger.Error("BroadcastTxSync", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
 	if result.Code != define.CodeType_OK {
+		hd.logger.Info("BroadcastTxSync", zap.Uint32("code", result.Code))
 		hd.responseWrite(ctx, false, result)
 		return
 	}

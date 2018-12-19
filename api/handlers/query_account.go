@@ -24,6 +24,7 @@ func (hd *Handler) QueryAccount(ctx *gin.Context) {
 
 	result, err := hd.client.ABCIQuery(btchain.QUERY_ACCOUNT, []byte(addressHex))
 	if err != nil {
+		hd.logger.Error("ABCIQuery", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
@@ -38,7 +39,7 @@ func (hd *Handler) QueryAccount(ctx *gin.Context) {
 	resData := make(map[string]interface{}, 0)
 	if err := json.Unmarshal(data.Data, &resData); err != nil {
 		hd.responseWrite(ctx, false, err.Error())
-		hd.logger.Error("resData", zap.String("data", string(data.Data)))
+		hd.logger.Error("json.Unmarshal", zap.String("data", string(data.Data)))
 		return
 	}
 	hd.responseWrite(ctx, true, &resData)

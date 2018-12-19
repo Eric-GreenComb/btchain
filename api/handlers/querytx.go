@@ -7,7 +7,7 @@ import (
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/gin-gonic/gin"
-	"log"
+	"go.uber.org/zap"
 	"strconv"
 )
 
@@ -65,6 +65,7 @@ func (hd *Handler) queryTxs(ctx *gin.Context, account, direction, txhash, cursor
 
 	result, err := hd.client.ABCIQuery(btchain.QUERY_TX, bys)
 	if err != nil {
+		hd.logger.Error("ABCIQuery", zap.Error(err))
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
@@ -76,10 +77,9 @@ func (hd *Handler) queryTxs(ctx *gin.Context, account, direction, txhash, cursor
 		return
 	}
 
-	log.Println("data.Data", string(data.Data))
-	//resData := make(map[string]interface{}, 0)
 	resData := make([]define.TransactionData, 0)
 	if err := json.Unmarshal(data.Data, &resData); err != nil {
+		hd.logger.Error("json.Unmarshal", zap.String("data", string(data.Data)))
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
