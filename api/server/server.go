@@ -32,11 +32,6 @@ func (s *Server) Start() {
 
 	v1 := router.Group("/v1")
 	{
-		if !s.cfg.ReadOnly {
-			v1.POST("/transactionsCommit", s.handler.SendTransactionsCommit)
-			v1.POST("/transactionsAsync", s.handler.SendTransactionsAsync)
-			v1.POST("/transactionsSync", s.handler.SendTransactionsSync)
-		}
 		//v1.GET("/nonce/:address", s.handler.QueryNonce)
 		v1.GET("/genkey", s.handler.GenKey)
 		v1.GET("/accounts/:address", s.handler.QueryAccount)
@@ -44,6 +39,16 @@ func (s *Server) Start() {
 		v1.GET("/transactions", s.handler.QueryTxs)
 		v1.GET("/accounts/:address/transactions", s.handler.QueryAccTxs)
 		v1.GET("/accounts/:address/transactions/:direction", s.handler.QueryAccTxsByDirection)
+
+		if s.cfg.Writable {
+			v1.POST("/transactionsCommit", s.handler.SendTransactionsCommit)
+			v1.POST("/transactionsAsync", s.handler.SendTransactionsAsync)
+			v1.POST("/transactionsSync", s.handler.SendTransactionsSync)
+		}
+
+		if s.cfg.IsAdmin {
+			v1.POST("/specialop", s.handler.SpecialOP)
+		}
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "version" {

@@ -42,6 +42,18 @@ func (hd *Handler) makeTx(ctx *gin.Context) (*define.Transaction, error) {
 		action.Data = v.Data
 		action.Memo = v.Memo
 
+		if len(action.Src) != 42 || len(action.Dst) != 42 {
+			return nil, errors.New("err address")
+		}
+
+		if len(v.Priv) != 64 {
+			return nil, errors.New("err privkey")
+		}
+
+		if action.Amount.Cmp(big.NewInt(0)) <= 0 {
+			return nil, errors.New("err amount")
+		}
+
 		tx.Actions[i] = &action
 		privkey, err := crypto.ToECDSA(ethcmn.Hex2Bytes(v.Priv))
 		if err != nil {

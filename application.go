@@ -34,6 +34,8 @@ type BTApplication struct {
 	dataM    *datamanager.DataManager
 	logger   *zap.Logger
 	cfg      *config.Config
+
+	sp SPOnce
 }
 
 type blockExeInfo struct {

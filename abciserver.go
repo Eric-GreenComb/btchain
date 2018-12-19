@@ -1,6 +1,7 @@
 package btchain
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/axengine/btchain/define"
 	"github.com/axengine/btchain/version"
@@ -12,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"sort"
 	"strconv"
+	"sync/atomic"
 )
 
 func (app *BTApplication) InitChain(req abcitypes.RequestInitChain) abcitypes.ResponseInitChain {
@@ -234,6 +236,13 @@ func (app *BTApplication) Query(reqQuery abcitypes.RequestQuery) (resQuery abcit
 			return abcitypes.ResponseQuery{Code: define.CodeType_EncodingError, Log: err.Error()}
 		}
 		return abcitypes.ResponseQuery{Value: b}
+	case SPECIAL_OP:
+		result := app.SpecialOP(reqQuery.Data)
+		b, err := rlp.EncodeToBytes(&result)
+		if err != nil {
+			return abcitypes.ResponseQuery{Code: define.CodeType_EncodingError, Log: err.Error()}
+		}
+		return abcitypes.ResponseQuery{Value: b}
 	default:
 		app.logger.Warn("ABCI Query", zap.String("code", "CodeType_UnknownRequest"))
 		return abcitypes.ResponseQuery{Code: define.CodeType_UnknownRequest, Log: "CodeType_UnknownRequest"}
@@ -244,5 +253,18 @@ func (app *BTApplication) Query(reqQuery abcitypes.RequestQuery) (resQuery abcit
 // EndBlock
 // https://tendermint.com/docs/spec/abci/apps.html#validator-updates
 func (app *BTApplication) EndBlock(req abcitypes.RequestEndBlock) abcitypes.ResponseEndBlock {
+	if atomic.LoadUint32(&app.sp.flag) == 1 {
+		defer atomic.StoreUint32(&app.sp.flag, 0)
+		pubkey := base64.StdEncoding.EncodeToString(app.sp.op.PubKey)
+		app.logger.Info("sp.flag", zap.String("pubkey", pubkey), zap.Uint32("power", app.sp.op.Power))
+		var validator abcitypes.ValidatorUpdate
+		validator.Power = int64(app.sp.op.Power)
+		validator.PubKey.Type = "ed25519"
+		validator.PubKey.Data = app.sp.op.PubKey
+
+		var ValidatorUpdates []abcitypes.ValidatorUpdate
+		ValidatorUpdates = append(ValidatorUpdates, validator)
+		return abcitypes.ResponseEndBlock{ValidatorUpdates: ValidatorUpdates}
+	}
 	return abcitypes.ResponseEndBlock{}
 }

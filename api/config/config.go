@@ -7,7 +7,8 @@ import (
 type Config struct {
 	Bind     string
 	RPC      string
-	ReadOnly bool
+	Writable bool
+	IsAdmin  bool
 	Log      LogInfo
 }
 
