@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"github.com/axengine/btchain/bean"
+	"github.com/axengine/btchain/api/bean"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,10 +24,11 @@ var (
 
 func main() {
 	tps := flag.Int("t", 100, "transactions per second")
-	du := flag.Int("d", 10, "durations seconds")
-	clientNum := flag.Int("c", 10, "http client num")
+	actions := flag.Int("actions", 10, "actions per tx")
+	du := flag.Int("d", 300, "durations seconds")
+	clientNum := flag.Int("c", 30, "http client num")
 	flag.Parse()
-	log.Println("tps=", *tps, " clientNum=", *clientNum, " du=", *du)
+	log.Println("tps=", *tps, " action=", *actions, " clientNum=", *clientNum, " du=", *du)
 
 	adds = NewAddressMgr(10000)
 	clients = NewClientMgr(*clientNum)
@@ -51,7 +52,7 @@ OUTLOOP:
 						to := adds.Get()
 						begin := time.Now()
 						if err := transaction(cli, "0x061a060880BB4E5AD559350203d60a4349d3Ecd6", to, "1",
-							"5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033"); err != nil {
+							"5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033", *actions); err != nil {
 							log.Println("======>", err)
 							atomic.AddUint64(&fail, 1)
 						} else {
@@ -68,10 +69,10 @@ OUTLOOP:
 		}
 	}
 	wg.Wait()
-	log.Println("done... err/succ:", fail, "/", success, "\n analyze:", DefaultAnalyzer.String())
+	log.Println("done... err/succ:", fail, "/", success, "\n\t\tanalyze:", DefaultAnalyzer.String())
 }
 
-func transaction(cli *http.Client, from, to string, amount string, priv string) error {
+func transaction(cli *http.Client, from, to string, amount string, priv string, actions int) error {
 	//fmt.Printf("from:%v to:%v amount:%v priv:%v\n", from, to, amount, priv)
 	var tdata bean.Transaction
 	tdata.BaseFee = "0"
@@ -85,9 +86,10 @@ func transaction(cli *http.Client, from, to string, amount string, priv string) 
 	action.Data = "xxxxxxxxxxxxx"
 	action.Memo = "xxxxxx"
 
-	for i := 0; i < 20; i++ {
-		action.ID = i
-		tdata.Actions = append(tdata.Actions, action)
+	for i := 0; i < actions; i++ {
+		actionnew := action
+		actionnew.ID = i
+		tdata.Actions = append(tdata.Actions, &actionnew)
 	}
 
 	b, _ := json.Marshal(&tdata)
@@ -111,6 +113,6 @@ func transaction(cli *http.Client, from, to string, amount string, priv string) 
 	if is, ok := data["isSuccess"]; !ok || !is.(bool) {
 		return errors.New(string(b))
 	}
-	log.Println("--->", string(b))
+	//log.Println("--->", string(b))
 	return nil
 }

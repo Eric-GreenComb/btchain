@@ -58,5 +58,5 @@ func (p *Analyze) String() string {
 		}
 	}
 
-	return fmt.Sprintf("\ncount=%v max=%v min=%v avg=%v ms", count, max, min, du.Nanoseconds()/int64(count)/1000000)
+	return fmt.Sprintf("\n\t\tcount=%v max=%v min=%v avg=%v ms", count, max, min, du.Nanoseconds()/int64(count)/1000000)
 }
