@@ -143,6 +143,55 @@ func (m *DataManager) QuerySingleTx(txhash *ethcmn.Hash) (*define.TransactionDat
 	return &td, nil
 }
 
+func (m *DataManager) QueryTxByHash(txhash *ethcmn.Hash) ([]define.TransactionData, error) {
+	if m.qNeedLock {
+		m.qLock.Lock()
+		defer m.qLock.Unlock()
+	}
+
+	where := []database.Where{
+		database.Where{Name: "txhash", Value: txhash.Hex()},
+	}
+
+	orderT, err := database.MakeOrder("", "txid")
+	if err != nil {
+		return nil, err
+	}
+
+	var result []database.TxData
+	if err := m.qdb.SelectRows(database.TableTransactions, where, orderT, nil, &result); err != nil {
+		return nil, err
+	}
+
+	if len(result) == 0 {
+		return nil, nil
+	}
+
+	var res []define.TransactionData
+	for _, r := range result {
+		td := define.TransactionData{
+			TxID:        r.TxID,
+			TxHash:      ethcmn.HexToHash(r.TxHash),
+			BlockHeight: r.BlockHeight,
+			BlockHash:   ethcmn.HexToHash(r.BlockHash),
+			ActionCount: r.ActionCount,
+			ActionID:    r.ActionID,
+			Src:         ethcmn.HexToAddress(r.Src),
+			Dst:         ethcmn.HexToAddress(r.Dst),
+			Nonce:       r.Nonce,
+			Amount:      Str2Big(r.Amount),
+			ResultCode:  r.ResultCode,
+			ResultMsg:   r.ResultMsg,
+			CreateAt:    r.CreateAt,
+			JData:       r.JData,
+			Memo:        r.Memo,
+		}
+
+		res = append(res, td)
+	}
+	return res, nil
+}
+
 func Str2Big(num string) *big.Int {
 	n := new(big.Int)
 	n.SetString(num, 0)

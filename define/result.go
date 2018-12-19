@@ -4,24 +4,27 @@ import (
 	"encoding/json"
 )
 
-type CodeType uint32
-
 const (
-	CodeType_OK CodeType = 0
+	CodeType_OK uint32 = 0
 	// General response codes, 0 ~ 99
-	CodeType_InternalError     CodeType = 1
-	CodeType_EncodingError     CodeType = 2
-	CodeType_BadNonce          CodeType = 3
-	CodeType_Unauthorized      CodeType = 4
-	CodeType_InsufficientFunds CodeType = 5 //资金不足
-	CodeType_UnknownRequest    CodeType = 6
-	CodeType_InvalidTx         CodeType = 7
-	CodeType_UnknownAccount    CodeType = 8
+	CodeType_InternalError     uint32 = 1  //内部错误
+	CodeType_EncodingError     uint32 = 2  //编解码错误
+	CodeType_BadNonce          uint32 = 3  //nonce错误
+	CodeType_Unauthorized      uint32 = 4  //未授权
+	CodeType_InsufficientFunds uint32 = 5  //资金不足
+	CodeType_UnknownRequest    uint32 = 6  //未知请求
+	CodeType_InvalidTx         uint32 = 7  //交易不合法
+	CodeType_UnknownAccount    uint32 = 8  //未知帐户
+	CodeType_AccountExist      uint32 = 9  //帐户已存在
+	CodeType_AccountNotFound   uint32 = 10 //帐户不存在
+	CodeType_OutOfOrder        uint32 = 11 //action顺序错误
+	CodeType_UnknownError      uint32 = 12 //未知错误
+	CodeType_SignerFaild       uint32 = 13 //签名错误
 )
 
 // CONTRACT: a zero Result is OK.
 type Result struct {
-	Code CodeType `json:"Code"`
+	Code uint32 `json:"Code"`
 	//Data []byte   `json:"Data"`
 	Data []byte `json:"Data"`
 	Log  string `json:"Log"` // Can be non-deterministic
@@ -46,7 +49,7 @@ type ExecuteResult struct {
 	Error      error
 }
 
-func NewResult(code CodeType, data []byte, log string) Result {
+func NewResult(code uint32, data []byte, log string) Result {
 	return Result{
 		Code: code,
 		Data: data,
@@ -132,7 +135,7 @@ func NewResultOK(data []byte, log string) Result {
 	}
 }
 
-func NewError(code CodeType, log string) Result {
+func NewError(code uint32, log string) Result {
 	return Result{
 		Code: code,
 		Log:  log,

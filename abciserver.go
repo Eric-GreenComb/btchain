@@ -2,7 +2,6 @@ package btchain
 
 import (
 	"fmt"
-	"github.com/axengine/btchain/code"
 	"github.com/axengine/btchain/define"
 	"github.com/axengine/btchain/version"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -11,14 +10,12 @@ import (
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 	abciversion "github.com/tendermint/tendermint/version"
 	"go.uber.org/zap"
-	"log"
 	"sort"
 	"strconv"
 )
 
 func (app *BTApplication) InitChain(req abcitypes.RequestInitChain) abcitypes.ResponseInitChain {
-	//tmtypes.Tx{}
-	log.Println("=====>>InitChain")
+	app.logger.Info("======>>InitChain", zap.String("chainId", req.ChainId), zap.Time("genis", req.Time))
 	return abcitypes.ResponseInitChain{}
 }
 
@@ -42,7 +39,7 @@ func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
 	var t define.Transaction
 	if err := rlp.DecodeBytes(tx, &t); err != nil {
 		app.logger.Warn("rlp unmarshal", zap.Error(err), zap.ByteString("tx", tx))
-		return abcitypes.ResponseCheckTx{Code: code.CodeTypeEncodingError, Log: "CodeTypeEncodingError"}
+		return abcitypes.ResponseCheckTx{Code: define.CodeType_EncodingError, Log: "CodeTypeEncodingError"}
 	}
 	sort.Sort(t)
 	app.logger.Debug("ABCI CheckTx", zap.String("tx", t.String()))
@@ -50,35 +47,35 @@ func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
 	//检查每个操作是否合法
 	for i, action := range t.Actions {
 		if i != int(action.ID) {
-			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeOutOfOrder:"+strconv.Itoa(int(action.ID))))
-			return abcitypes.ResponseCheckTx{Code: code.CodeOutOfOrder, Log: "CodeOutOfOrder:" + strconv.Itoa(int(action.ID))}
+			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeType_OutOfOrder:"+strconv.Itoa(int(action.ID))))
+			return abcitypes.ResponseCheckTx{Code: define.CodeType_OutOfOrder, Log: "CodeType_OutOfOrder:" + strconv.Itoa(int(action.ID))}
 		}
 		if !app.stateDup.state.Exist(action.Src) {
-			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeAccountNotFound:"+action.Src.Hex()))
-			return abcitypes.ResponseCheckTx{Code: code.CodeAccountNotFound, Log: "CodeAccountNotFound:" + action.Src.Hex()}
+			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeType_AccountNotFound:"+action.Src.Hex()))
+			return abcitypes.ResponseCheckTx{Code: define.CodeType_AccountNotFound, Log: "CodeType_AccountNotFound:" + action.Src.Hex()}
 		}
 
 		balance := app.stateDup.state.GetBalance(action.Src)
 		if balance.Cmp(action.Amount) < 0 {
-			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeNotEnoughMoney:"+balance.String()))
-			return abcitypes.ResponseCheckTx{Code: code.CodeNotEnoughMoney, Log: "CodeNotEnoughMoney:" + balance.String()}
+			app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeType_InsufficientFunds:"+balance.String()))
+			return abcitypes.ResponseCheckTx{Code: define.CodeType_InsufficientFunds, Log: "CodeType_InsufficientFunds:" + balance.String()}
 		}
 	}
 
 	//检查签名是否合法
 	if err := t.CheckSig(); err != nil {
-		app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeSignerFaild:"+err.Error()))
-		return abcitypes.ResponseCheckTx{Code: code.CodeSignerFaild, Log: "CodeSignerFaild:" + err.Error()}
+		app.logger.Warn("ABCI CheckTx", zap.String("err", "CodeType_SignerFaild:"+err.Error()))
+		return abcitypes.ResponseCheckTx{Code: define.CodeType_SignerFaild, Log: "CodeType_SignerFaild:" + err.Error()}
 	}
 
 	app.logger.Info("ABCI CheckTx", zap.String("hash", t.SigHash().Hex()))
-	return abcitypes.ResponseCheckTx{Code: code.CodeTypeOK, GasWanted: 1, Data: t.SigHash().Bytes()}
+	return abcitypes.ResponseCheckTx{GasWanted: 1, Data: t.SigHash().Bytes()}
 }
 
 // BeginBlock
 // 区块开始，记录区块高度和hash
 func (app *BTApplication) BeginBlock(req abcitypes.RequestBeginBlock) abcitypes.ResponseBeginBlock {
-	app.logger.Info("ABCI BeginBlock", zap.Int64("height", req.Header.Height), zap.String("hash", ethcmn.Bytes2Hex(req.Hash)))
+	app.logger.Debug("ABCI BeginBlock", zap.Int64("height", req.Header.Height), zap.String("hash", ethcmn.Bytes2Hex(req.Hash)))
 	app.tempHeader.Height = uint64(req.Header.Height)
 	app.tempHeader.BlockHash = ethcmn.BytesToHash(req.Hash)
 	return abcitypes.ResponseBeginBlock{}
@@ -90,7 +87,7 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 	)
 	if err := rlp.DecodeBytes(tx, &t); err != nil {
 		app.logger.Warn("rlp unmarshal", zap.Error(err), zap.ByteString("tx", tx))
-		return abcitypes.ResponseDeliverTx{Code: code.CodeTypeEncodingError, Log: "CodeTypeEncodingError"}
+		return abcitypes.ResponseDeliverTx{Code: define.CodeType_EncodingError, Log: "CodeType_EncodingError"}
 	}
 	sort.Sort(t)
 	app.logger.Debug("ABCI DeliverTx", zap.String("tx", t.String()))
@@ -116,8 +113,8 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 		balance := app.stateDup.state.GetBalance(action.Src)
 		if balance.Cmp(action.Amount) < 0 {
 			app.stateDup.state.RevertToSnapshot(stateSnapshot)
-			app.logger.Warn("ABCI DeliverTx", zap.String("err", "CodeNotEnoughMoney"), zap.String("src", action.Src.Hex()), zap.String("amount", balance.String()))
-			return abcitypes.ResponseDeliverTx{Code: code.CodeNotEnoughMoney, Log: "not enough money"}
+			app.logger.Warn("ABCI DeliverTx", zap.String("err", "CodeType_InsufficientFunds"), zap.String("src", action.Src.Hex()), zap.String("amount", balance.String()))
+			return abcitypes.ResponseDeliverTx{Code: define.CodeType_InsufficientFunds, Log: "not enough money"}
 		}
 
 		//资金操作
@@ -142,7 +139,7 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 		app.blockExeInfo.txDatas = append(app.blockExeInfo.txDatas, &txData)
 	}
 
-	return abcitypes.ResponseDeliverTx{Code: code.CodeTypeOK, Data: txHash.Bytes()}
+	return abcitypes.ResponseDeliverTx{Data: txHash.Bytes()}
 }
 
 func (app *BTApplication) commitState() (ethcmn.Hash, error) {
@@ -227,19 +224,19 @@ func (app *BTApplication) Query(reqQuery abcitypes.RequestQuery) (resQuery abcit
 		result := app.QueryTx(reqQuery.Data)
 		b, err := rlp.EncodeToBytes(&result)
 		if err != nil {
-			return abcitypes.ResponseQuery{Code: code.CodeTypeEncodingError, Log: err.Error()}
+			return abcitypes.ResponseQuery{Code: define.CodeType_EncodingError, Log: err.Error()}
 		}
 		return abcitypes.ResponseQuery{Value: b}
 	case QUERY_ACCOUNT:
 		result := app.QueryAccount(reqQuery.Data)
 		b, err := rlp.EncodeToBytes(&result)
 		if err != nil {
-			return abcitypes.ResponseQuery{Code: code.CodeTypeEncodingError, Log: err.Error()}
+			return abcitypes.ResponseQuery{Code: define.CodeType_EncodingError, Log: err.Error()}
 		}
 		return abcitypes.ResponseQuery{Value: b}
 	default:
-		app.logger.Warn("ABCI Query", zap.String("code", "CodeUnknownPath"))
-		return abcitypes.ResponseQuery{Code: code.CodeUnknownPath, Log: "CodeUnknownPath"}
+		app.logger.Warn("ABCI Query", zap.String("code", "CodeType_UnknownRequest"))
+		return abcitypes.ResponseQuery{Code: define.CodeType_UnknownRequest, Log: "CodeType_UnknownRequest"}
 	}
 	return abcitypes.ResponseQuery{Value: []byte(fmt.Sprintf("%v", app.currentHeader.PrevHash))}
 }

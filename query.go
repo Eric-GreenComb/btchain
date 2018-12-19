@@ -34,7 +34,7 @@ func (app *BTApplication) QueryTx(tx []byte) define.Result {
 		return MakeResultData(result)
 	}
 	if query.TxHash != ZERO_HASH {
-		result, err := app.dataM.QuerySingleTx(&query.TxHash)
+		result, err := app.dataM.QueryTxByHash(&query.TxHash)
 		if err != nil {
 			return define.NewError(define.CodeType_InternalError, err.Error())
 		}

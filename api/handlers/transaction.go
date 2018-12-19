@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"crypto/ecdsa"
-	"github.com/axengine/btchain/bean"
+	"github.com/axengine/btchain/api/bean"
 	"github.com/axengine/btchain/define"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"math/big"
+	"sort"
 	"time"
 )
 
@@ -18,6 +19,7 @@ func (hd *Handler) makeTx(ctx *gin.Context) (*define.Transaction, error) {
 	if err := ctx.BindJSON(&tdata); err != nil {
 		return nil, err
 	}
+	sort.Sort(&tdata)
 
 	ops := len(tdata.Actions)
 
@@ -73,7 +75,14 @@ func (hd *Handler) SendTransactionsCommit(ctx *gin.Context) {
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
-
+	if result.CheckTx.Code != define.CodeType_OK {
+		hd.responseWrite(ctx, false, result.CheckTx)
+		return
+	}
+	if result.DeliverTx.Code != define.CodeType_OK {
+		hd.responseWrite(ctx, false, result.DeliverTx)
+		return
+	}
 	hd.responseWrite(ctx, true, ethcmn.BytesToHash(result.DeliverTx.Data).Hex())
 }
 
@@ -100,6 +109,10 @@ func (hd *Handler) SendTransactionsAsync(ctx *gin.Context) {
 	result, err := hd.client.BroadcastTxAsync(b)
 	if err != nil {
 		hd.responseWrite(ctx, false, err.Error())
+		return
+	}
+	if result.Code != define.CodeType_OK {
+		hd.responseWrite(ctx, false, result)
 		return
 	}
 	hd.responseWrite(ctx, true, ethcmn.BytesToHash(result.Hash).Hex())
@@ -130,7 +143,10 @@ func (hd *Handler) SendTransactionsSync(ctx *gin.Context) {
 		hd.responseWrite(ctx, false, err.Error())
 		return
 	}
-
+	if result.Code != define.CodeType_OK {
+		hd.responseWrite(ctx, false, result)
+		return
+	}
 	hd.responseWrite(ctx, true, ethcmn.BytesToHash(result.Data).Hex())
 }
 
