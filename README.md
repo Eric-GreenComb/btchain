@@ -48,13 +48,17 @@ path = "./log/"
 ```
 
 ## 安装cmake
+```
 wget https://cmake.org/files/v3.6/cmake-3.6.2.tar.gz
 ./boostrap
 make && make install
+```
 
 ## 编译snappy
+```
 wget https://github.com/google/snappy/archive/1.1.7.tar.gz
 tar zxf 1.1.7.tar.gz
 cd snappy-1.1.7
 mkdir build && cd build && cmake ../
 make install
+```
