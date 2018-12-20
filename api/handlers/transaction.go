@@ -42,7 +42,7 @@ func (hd *Handler) makeTx(ctx *gin.Context) (*define.Transaction, error) {
 		action.Data = v.Data
 		action.Memo = v.Memo
 
-		if len(action.Src) != 42 || len(action.Dst) != 42 {
+		if len(v.Src) != 42 || len(v.Dst) != 42 {
 			return nil, errors.New("err address")
 		}
 

@@ -1,6 +1,9 @@
 package btchain
 
 import (
+	"fmt"
+	"github.com/axengine/btchain/define"
+	"github.com/axengine/go-amino"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -28,4 +31,40 @@ func Test_commit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func Test_validators(t *testing.T) {
+	db := ethdb.NewMemDatabase()
+
+	var vls []*define.Validator
+	vls = append(vls, &define.Validator{
+		"xxxxxxx",
+		10,
+	})
+	vls = append(vls, &define.Validator{
+		"xxxxxxx2",
+		20,
+	})
+
+	b, err := amino.MarshalBinaryBare(&vls)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := db.Put([]byte("validatorsKey"), b); err != nil {
+		t.Fatal(err)
+	}
+
+	bb, err := db.Get([]byte("validatorsKey"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var xx []*define.Validator
+	err = amino.UnmarshalBinaryBare(bb, &xx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(xx[0].PubKey, xx[0].Power)
+	fmt.Println(xx[1].PubKey, xx[1].Power)
 }

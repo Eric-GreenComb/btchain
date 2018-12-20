@@ -9,10 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"strconv"
+	"time"
 )
 
-func (hd *Handler) SpecialOP(ctx *gin.Context) {
-	var op bean.SpecilOP
+func (hd *Handler) ValidatorUpdate(ctx *gin.Context) {
+	var op bean.ValidatorReq
 	if err := ctx.BindJSON(&op); err != nil {
 		hd.responseWrite(ctx, false, err.Error())
 		return
@@ -24,7 +25,7 @@ func (hd *Handler) SpecialOP(ctx *gin.Context) {
 		return
 	}
 	if len(b) != 32 {
-		hd.responseWrite(ctx, false, "Err address format")
+		hd.responseWrite(ctx, false, "error address format")
 		return
 	}
 	_, err = strconv.Atoi(op.Power)
@@ -33,10 +34,17 @@ func (hd *Handler) SpecialOP(ctx *gin.Context) {
 		return
 	}
 
+	if len(op.Sign) != 128 {
+		hd.responseWrite(ctx, false, "error signature")
+		return
+	}
+
 	var tx define.Transaction
 	var action define.Action
 	action.Data = op.Pubkey
 	action.Memo = op.Power
+	copy(action.SignHex[:], ethcmn.Hex2Bytes(op.Sign))
+	action.CreatedAt = uint64(time.Now().UnixNano())
 
 	tx.Type = 1
 	tx.Actions = append(tx.Actions, &action)

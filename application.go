@@ -35,7 +35,7 @@ type BTApplication struct {
 	logger   *zap.Logger
 	cfg      *config.Config
 
-	sp SPOnce
+	valMgr *ValidatorMgr
 }
 
 type blockExeInfo struct {
@@ -80,6 +80,11 @@ func (app *BTApplication) init() {
 	if app.chainDb, err = OpenDatabase(cfg.DB.Path, "chaindata", LDatabaseCache, LDatabaseHandles); err != nil {
 		panic(err)
 	}
+
+	//加载validator信息
+	app.valMgr = NewValidatorMgr(app.chainDb)
+	app.valMgr.Load()
+	app.logger.Info("init", zap.String("validators", app.valMgr.String()))
 
 	//加载最新区块信息
 	lastBlock := app.LoadLastBlock()

@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	BASE_API_URL = "http://192.168.1.2:10000/v1/"
+	BASE_API_URL = "http://192.168.8.144:10000/v1/"
 )
 
 func Test_transaction(t *testing.T) {
@@ -116,7 +116,7 @@ func Test_genaccount(t *testing.T) {
 	result := resultx.(map[string]interface{})
 	address, _ := result["address"]
 	privkey, _ := result["privkey"]
-	Payment(address.(string), "1000000000000")
+	Payment(address.(string), "10000")
 	log.Println("address:", address.(string), " priv:", privkey.(string))
 }
 

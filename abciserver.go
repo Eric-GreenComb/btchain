@@ -18,6 +18,14 @@ import (
 
 func (app *BTApplication) InitChain(req abcitypes.RequestInitChain) abcitypes.ResponseInitChain {
 	app.logger.Info("======>>InitChain", zap.String("chainId", req.ChainId), zap.Time("genis", req.Time))
+	for _, v := range req.Validators {
+		var validator define.Validator
+		validator.PubKey = base64.StdEncoding.EncodeToString(v.PubKey.Data)
+		validator.Power = v.Power
+		app.valMgr.Save(&validator)
+	}
+	app.valMgr.Dump()
+	app.logger.Info("======>>InitChain", zap.String("validators", app.valMgr.String()))
 	return abcitypes.ResponseInitChain{}
 }
 
@@ -47,6 +55,9 @@ func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
 	app.logger.Debug("ABCI CheckTx", zap.String("tx", t.String()))
 
 	if t.Type == 1 {
+		if err := app.CheckValidatorUpdate(&t); err != nil {
+			return abcitypes.ResponseCheckTx{Code: define.CodeType_InvalidTx, Log: err.Error()}
+		}
 		return abcitypes.ResponseCheckTx{Code: define.CodeType_OK, Data: t.SigHash().Bytes()}
 	}
 
@@ -82,6 +93,13 @@ func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
 // 区块开始，记录区块高度和hash
 func (app *BTApplication) BeginBlock(req abcitypes.RequestBeginBlock) abcitypes.ResponseBeginBlock {
 	app.logger.Debug("ABCI BeginBlock", zap.Int64("height", req.Header.Height), zap.String("hash", ethcmn.Bytes2Hex(req.Hash)))
+	//log.Println("===============>", req.ByzantineValidators)
+	var tmp string
+	for _, v := range req.ByzantineValidators {
+		address := base64.StdEncoding.EncodeToString(v.Validator.Address)
+		tmp = tmp + "=>[" + address + "]:[" + strconv.Itoa(int(v.Validator.Power)) + "]"
+	}
+	app.logger.Debug("ABCI BeginBlock", zap.String("validators", tmp))
 	app.tempHeader.Height = uint64(req.Header.Height)
 	app.tempHeader.BlockHash = ethcmn.BytesToHash(req.Hash)
 	return abcitypes.ResponseBeginBlock{}
@@ -99,7 +117,7 @@ func (app *BTApplication) DeliverTx(tx []byte) abcitypes.ResponseDeliverTx {
 	app.logger.Info("ABCI DeliverTx", zap.String("tx", t.String()))
 
 	if t.Type == 1 {
-		if err := app.SpecialOP(&t); err != nil {
+		if err := app.DeliverValidatorUpdate(&t); err != nil {
 			return abcitypes.ResponseDeliverTx{Code: define.CodeType_InvalidTx, Log: err.Error()}
 		}
 		return abcitypes.ResponseDeliverTx{Code: define.CodeType_OK, Data: t.SigHash().Bytes()}
@@ -257,14 +275,32 @@ func (app *BTApplication) Query(reqQuery abcitypes.RequestQuery) (resQuery abcit
 // EndBlock
 // https://tendermint.com/docs/spec/abci/apps.html#validator-updates
 func (app *BTApplication) EndBlock(req abcitypes.RequestEndBlock) abcitypes.ResponseEndBlock {
-	if atomic.LoadUint32(&app.sp.flag) == 1 {
-		defer atomic.StoreUint32(&app.sp.flag, 0)
-		pubkey := base64.StdEncoding.EncodeToString(app.sp.op.PubKey)
-		app.logger.Info("sp.flag", zap.String("pubkey", pubkey), zap.Uint32("power", app.sp.op.Power))
+	if atomic.LoadUint32(&app.valMgr.flag) == 1 {
+		defer atomic.StoreUint32(&app.valMgr.flag, 0)
+
+		toUpdate := app.valMgr.toUpdate
+		if toUpdate == nil {
+			return abcitypes.ResponseEndBlock{}
+		}
+		pubkey, _ := base64.StdEncoding.DecodeString(toUpdate.PubKey)
+
+		app.logger.Info("EndBlock set validator", zap.String("pubkey", toUpdate.PubKey), zap.Int64("power", toUpdate.Power))
 		var validator abcitypes.ValidatorUpdate
-		validator.Power = int64(app.sp.op.Power)
+		validator.Power = toUpdate.Power
 		validator.PubKey.Type = "ed25519"
-		validator.PubKey.Data = app.sp.op.PubKey
+		validator.PubKey.Data = pubkey
+
+		//先更新本地的validator
+		{
+			v := app.valMgr.Get(toUpdate.PubKey)
+			if v == nil {
+				app.valMgr.Save(toUpdate)
+			} else {
+				v.Power = toUpdate.Power
+			}
+			app.valMgr.Dump()
+			app.logger.Info("EndBlock", zap.String("validators", app.valMgr.String()))
+		}
 
 		var ValidatorUpdates []abcitypes.ValidatorUpdate
 		ValidatorUpdates = append(ValidatorUpdates, validator)

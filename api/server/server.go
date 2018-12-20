@@ -47,7 +47,7 @@ func (s *Server) Start() {
 		}
 
 		if s.cfg.IsAdmin {
-			v1.POST("/specialop", s.handler.SpecialOP)
+			v1.POST("/validatorUpdate", s.handler.ValidatorUpdate)
 		}
 	}
 
