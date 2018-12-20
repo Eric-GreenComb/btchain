@@ -15,8 +15,9 @@ BTChain Baseed on tendermint 0.27.0-9c236ffd
 "github.com/axengine/btchain"
 ```
 - 确保gcc可用，因为要开启cgo
-- 进入tendermint目录执行`make build_c`，生成的二进制文件在build目录
+- 进入tendermint目录执行`CGO_LDFLAGS="-lsnappy" make build_c`，生成的二进制文件在build目录
 - 配置文件config.toml与可执行程序在同一目录
+- 要使用cleveldb，需要修改.tendermint/config/config.toml 的backend
 ```
 [genesis]
 account = "0x061a060880BB4E5AD559350203d60a4349d3Ecd6"
@@ -45,3 +46,15 @@ isAdmin = true #true时有validator更新API
 [log]
 path = "./log/"
 ```
+
+## 安装cmake
+wget https://cmake.org/files/v3.6/cmake-3.6.2.tar.gz
+./boostrap
+make && make install
+
+## 编译snappy
+wget https://github.com/google/snappy/archive/1.1.7.tar.gz
+tar zxf 1.1.7.tar.gz
+cd snappy-1.1.7
+mkdir build && cd build && cmake ../
+make install
