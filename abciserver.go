@@ -94,12 +94,12 @@ func (app *BTApplication) CheckTx(tx []byte) abcitypes.ResponseCheckTx {
 func (app *BTApplication) BeginBlock(req abcitypes.RequestBeginBlock) abcitypes.ResponseBeginBlock {
 	app.logger.Debug("ABCI BeginBlock", zap.Int64("height", req.Header.Height), zap.String("hash", ethcmn.Bytes2Hex(req.Hash)))
 	//log.Println("===============>", req.ByzantineValidators)
-	var tmp string
-	for _, v := range req.ByzantineValidators {
-		address := base64.StdEncoding.EncodeToString(v.Validator.Address)
-		tmp = tmp + "=>[" + address + "]:[" + strconv.Itoa(int(v.Validator.Power)) + "]"
-	}
-	app.logger.Debug("ABCI BeginBlock", zap.String("validators", tmp))
+	//var tmp string
+	//for _, v := range req.ByzantineValidators {
+	//	address := base64.StdEncoding.EncodeToString(v.Validator.Address)
+	//	tmp = tmp + "=>[" + address + "]:[" + strconv.Itoa(int(v.Validator.Power)) + "]"
+	//}
+	//app.logger.Debug("ABCI BeginBlock", zap.String("validators", tmp))
 	app.tempHeader.Height = uint64(req.Header.Height)
 	app.tempHeader.BlockHash = ethcmn.BytesToHash(req.Hash)
 	return abcitypes.ResponseBeginBlock{}
