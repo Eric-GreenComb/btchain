@@ -2,9 +2,9 @@
 package bean
 
 import (
-	"github.com/axengine/go-amino"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"github.com/tendermint/go-amino"
 	"strconv"
 )
 

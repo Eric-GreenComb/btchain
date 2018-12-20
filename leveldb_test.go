@@ -3,10 +3,10 @@ package btchain
 import (
 	"fmt"
 	"github.com/axengine/btchain/define"
-	"github.com/axengine/go-amino"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/tendermint/go-amino"
 	"math/big"
 	"testing"
 )
