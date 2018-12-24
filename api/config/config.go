@@ -10,6 +10,7 @@ type Config struct {
 	Writable bool
 	IsAdmin  bool
 	Log      LogInfo
+	Cache    Cache
 }
 
 func New() *Config {
@@ -23,4 +24,12 @@ func (p *Config) Init(cfgFile string) error {
 
 type LogInfo struct {
 	Path string
+}
+
+type Cache struct {
+	RedisStore     bool
+	Dial           string
+	Password       string
+	Db             int
+	MaxConnections int
 }

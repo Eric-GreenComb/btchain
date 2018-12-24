@@ -5,3 +5,10 @@ isAdmin = true
 
 [log]
 path = "./log/"
+
+[cache]
+redisStore = true
+dial = "127.0.0.1:6379"
+password = "rdspawd123"
+db = 0
+maxConnections = 10

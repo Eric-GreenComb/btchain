@@ -22,7 +22,7 @@ func (hd *Handler) makeTx(ctx *gin.Context) (*define.Transaction, error) {
 	}
 	sort.Sort(&tdata)
 
-	if hd.chechTx(tdata.Hash().Hex()) {
+	if !hd.chechTx(tdata.Hash().Hex()) {
 		return nil, errors.New("repeat tx:" + tdata.Hash().Hex())
 	}
 
@@ -159,13 +159,11 @@ func (hd *Handler) SendTransactionsSync(ctx *gin.Context) {
 	hd.responseWrite(ctx, true, ethcmn.BytesToHash(result.Data).Hex())
 }
 
-// chckeTx return true if the hash exist
+// chckeTx return true if ok
 func (hd *Handler) chechTx(hash string) bool {
-	hd.mu.Lock()
-	defer hd.mu.Unlock()
-	_, ok := hd.cache.Get(hash)
-	if !ok {
-		hd.cache.Set(hash, hash)
+	b, err := hd.cache.SetExNx(hash, []byte(hash))
+	if err != nil {
+		hd.logger.Error("chechTx", zap.Error(err))
 	}
-	return ok
+	return b
 }
