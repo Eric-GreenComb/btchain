@@ -292,6 +292,12 @@
 			"revision": ""
 		},
 		{
+			"checksumSHA1": "2x8Fae9vzhMryt2J/0WT+Qn8ZxU=",
+			"path": "github.com/hoisie/redis",
+			"revision": "b5c6e81454e0395c280f220d82a6854fd0fcf42e",
+			"revisionTime": "2016-07-30T15:44:56Z"
+		},
+		{
 			"checksumSHA1": "5K28zrXSdE1DzF70wWAH5B1vg/s=",
 			"path": "github.com/jmoiron/sqlx",
 			"revision": "0dae4fefe7c0e190f7b5a78dac28a1c82cc8d849",
