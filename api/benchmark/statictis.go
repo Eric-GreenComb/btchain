@@ -35,7 +35,7 @@ func (p *Analyze) Add(s *State) {
 func (p *Analyze) String() string {
 	count := len(p.datas)
 	if count == 0 {
-		return fmt.Sprintf("count=%s", count)
+		return fmt.Sprintf("count=%v", count)
 	}
 	var (
 		du       time.Duration

@@ -93,7 +93,7 @@ func transaction(cli *http.Client, from, to string, amount string, priv string, 
 	}
 
 	b, _ := json.Marshal(&tdata)
-	resp, err := cli.Post("http://192.168.1.2:10000/v1/"+"transactionsSync", "application/json", bytes.NewReader(b))
+	resp, err := cli.Post("http://192.168.8.144:8000/v1/"+"transactionsSync", "application/json", bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -113,6 +113,6 @@ func transaction(cli *http.Client, from, to string, amount string, priv string, 
 	if is, ok := data["isSuccess"]; !ok || !is.(bool) {
 		return errors.New(string(b))
 	}
-	//log.Println("--->", string(b))
+	log.Println("--->", string(b))
 	return nil
 }

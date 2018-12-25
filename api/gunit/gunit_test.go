@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	BASE_API_URL = "http://192.168.8.144:10000/v1/"
+	BASE_API_URL = "http://192.168.8.144:9000/v1/"
 )
 
 func Test_transaction(t *testing.T) {
@@ -30,11 +30,11 @@ func Test_transaction(t *testing.T) {
 
 	var action bean.Action
 	action.ID = 0
-	action.Src = "0x061a060880BB4E5AD559350203d60a4349d3Ecd7"
+	action.Src = "0x061a060880BB4E5AD559350203d60a4349d3Ecd6"
 	action.Dst = "0xA15d837e862cD9CacEF81214617D7Bb3B6270701"
-	action.Amount = "100"
+	action.Amount = "117"
 	action.Priv = "5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033"
-	action.Data = "沧海一声笑,滔滔两岸潮,浮沉随浪只记今朝;苍天笑,纷纷世上潮,谁负谁胜出天知晓;江山笑,烟雨遥,涛浪淘尽红尘俗世几多娇;清风笑,竟惹寂寥,豪情还剩了一襟晚照;苍生笑,不再寂寥,豪情仍在痴痴笑笑"
+	action.Data = "沧海一声笑.滔滔两岸潮,浮沉随浪只记今朝;苍天笑,纷纷世上潮,谁负谁胜出天知晓;江山笑,烟雨遥,涛浪淘尽红尘俗世几多娇;清风笑,竟惹寂寥,豪情还剩了一襟晚照;苍生笑,不再寂寥,豪情仍在痴痴笑笑"
 
 	tdata.Actions = append(tdata.Actions, &action)
 	action2 := action
@@ -59,7 +59,6 @@ func Test_transaction(t *testing.T) {
 
 	fmt.Println(string(b))
 
-	ethcmn.HexToAddress("0x02865c395bfd104394b786a264662d02177897391aba1155f854cb1065b6a444e5")
 }
 
 func Test_address(t *testing.T) {
