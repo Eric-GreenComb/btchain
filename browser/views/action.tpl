@@ -37,7 +37,7 @@
                                   <tr><td>Src:</td><td>{{$act.Src}}</td></tr>
                                   <tr><td>Dst:</td><td>{{$act.Dst}}</td></tr>
                                   <tr><td>Amount:</td><td>{{$act.Amount}}</td></tr>
-                                  <tr><td>Body:</td><td><textarea style="width:100%;height:200px;" readonly>{{$act.Body}}</textarea></td></tr>
+                                  <tr><td>Body:</td><td><textarea style="width:80%;height:50px;" readonly>{{$act.Body}}</textarea></td></tr>
                                   <tr><td>Memo:</td><td>{{$act.Memo}}</td></tr>
                              {{end}}
                             </tbody>
