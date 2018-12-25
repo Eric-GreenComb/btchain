@@ -15,7 +15,7 @@ func main() {
 		panic("On init yaml:" + err.Error())
 	}
 
-	logger = log.Initialize("file", "debug", path.Join(cfg.Log.Path, "api.debug.log"), path.Join(cfg.Log.Path, "api.error.log"))
+	logger = log.Initialize("file", "debug", path.Join(cfg.Log.Path, "api.debug.log"))
 
 	server := server.NewServer(logger, cfg)
 	server.Start()

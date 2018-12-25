@@ -73,7 +73,7 @@ func (app *BTApplication) init() {
 	}
 	app.cfg = cfg
 
-	logger = log.Initialize("file", cfg.Log.Env, path.Join(cfg.Log.Path, "node.debug.log"), path.Join(cfg.Log.Path, "node.error.log"))
+	logger = log.Initialize("file", cfg.Log.Env, path.Join(cfg.Log.Path, "node.debug.log"))
 	app.logger = logger
 
 	//level db

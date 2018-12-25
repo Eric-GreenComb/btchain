@@ -4,7 +4,7 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/axengine/btchain/browser/chain"
 	"github.com/axengine/btchain/browser/datamanage"
-	"github.com/axengine/btchain/browser/log"
+	"github.com/axengine/btchain/log"
 	"go.uber.org/zap"
 	"regexp"
 	"strconv"
