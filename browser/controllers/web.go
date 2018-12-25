@@ -299,7 +299,7 @@ func (wc *WebController) Search() {
 		block, err := datamanage.GetBlockByHeight(height)
 		if err == nil {
 			hash = block.Hash
-			wc.Redirect("/view/blocks/hash/"+hash+"/payout", 302)
+			wc.Redirect("/view/blocks/hash/"+hash, 302)
 		}
 	} else {
 		switch len(hash) {
