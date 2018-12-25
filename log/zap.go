@@ -1,6 +1,7 @@
 package log
 
 import (
+	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 
 	"go.uber.org/zap"
@@ -12,6 +13,8 @@ type (
 	infoWithDebug struct{}
 	aboveWarn     struct{}
 )
+
+var Logger *zap.Logger
 
 func (l infoOnly) Enabled(lv zapcore.Level) bool {
 	return lv == zapcore.InfoLevel
@@ -36,25 +39,27 @@ func makeErrorFilter() zapcore.LevelEnabler {
 	return aboveWarn{}
 }
 
-func Initialize(mode, env, output, errOutput string) *zap.Logger {
-	var logI *zap.Logger
-
+func Initialize(mode, env, output string) *zap.Logger {
 	if mode == "file" {
-		var zapConf zap.Config
-		var err error
-
+		var encoder zapcore.Encoder
 		if env == "production" {
-			zapConf = zap.NewProductionConfig()
+			encoder = zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig())
 		} else {
-			zapConf = zap.NewDevelopmentConfig()
+			encoder = zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 		}
-
-		zapConf.OutputPaths = []string{output}
-		zapConf.ErrorOutputPaths = []string{errOutput}
-		logI, err = zapConf.Build()
-		if err != nil {
-			panic(err.Error())
-		}
+		w := zapcore.AddSync(&lumberjack.Logger{
+			Filename:   output,
+			MaxSize:    500, // megabytes
+			MaxBackups: 3,
+			MaxAge:     28, // days
+			Compress:   true,
+		})
+		core := zapcore.NewCore(
+			encoder,
+			w,
+			zap.InfoLevel,
+		)
+		Logger = zap.New(core)
 	} else {
 		var encoderCfg zapcore.EncoderConfig
 		if env == "production" {
@@ -74,8 +79,8 @@ func Initialize(mode, env, output, errOutput string) *zap.Logger {
 			makeErrorFilter(),
 		)
 
-		logI = zap.New(zapcore.NewTee(coreInfo, coreError))
+		Logger = zap.New(zapcore.NewTee(coreInfo, coreError))
 	}
 
-	return logI
+	return Logger
 }

@@ -1,6 +1,7 @@
 package log
 
 import (
+	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"testing"
 
@@ -11,32 +12,59 @@ import (
 // type
 
 func TestZap(t *testing.T) {
+	var logI *zap.Logger
+	mode := "file"
+	env := "debug"
 
-	env := "production"
+	if mode == "file" {
+		var encoder zapcore.Encoder
 
-	var encoderCfg zapcore.EncoderConfig
-	if env == "production" {
-		encoderCfg = zap.NewProductionEncoderConfig()
+		if env == "production" {
+			encoder = zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig())
+		} else {
+			encoder = zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+		}
+
+		w := zapcore.AddSync(&lumberjack.Logger{
+			Filename:   "./log/debug.log",
+			MaxSize:    500, // megabytes
+			MaxBackups: 3,
+			MaxAge:     28, // days
+			Compress:   true,
+		})
+		core := zapcore.NewCore(
+			encoder,
+			w,
+			zap.InfoLevel,
+		)
+
+		logger := zap.New(core)
+		logI = logger
+
 	} else {
-		encoderCfg = zap.NewDevelopmentEncoderConfig()
+		var encoderCfg zapcore.EncoderConfig
+		if env == "production" {
+			encoderCfg = zap.NewProductionEncoderConfig()
+		} else {
+			encoderCfg = zap.NewDevelopmentEncoderConfig()
+		}
+
+		coreInfo := zapcore.NewCore(
+			zapcore.NewJSONEncoder(encoderCfg),
+			zapcore.NewMultiWriteSyncer(os.Stdout),
+			makeInfoFilter(env),
+		)
+		coreError := zapcore.NewCore(
+			zapcore.NewJSONEncoder(encoderCfg),
+			zapcore.NewMultiWriteSyncer(os.Stderr),
+			makeErrorFilter(),
+		)
+
+		logI = zap.New(zapcore.NewTee(coreInfo, coreError))
 	}
 
-	coreInfo := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderCfg),
-		zapcore.NewMultiWriteSyncer(os.Stdout),
-		makeInfoFilter(env),
-	)
-	coreError := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderCfg),
-		zapcore.NewMultiWriteSyncer(os.Stderr),
-		makeErrorFilter(),
-	)
+	for i := 0; i < 5; i++ {
+		logI.Info("0x000000000000000000000000000000000000000000000000000000000000000000", zap.Int("index", i))
+	}
 
-	logger := zap.New(zapcore.NewTee(coreInfo, coreError))
-
-	logger.Info("11111111")
-	logger.Info("2222222")
-	logger.Error("EEEEEEEEEE")
-	logger.Info("3333333")
-	logger.Info("44444444")
 }
