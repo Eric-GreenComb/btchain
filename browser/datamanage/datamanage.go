@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"os"
 	"sync"
 
 	"errors"
@@ -100,7 +99,7 @@ func CreateDB() (err error) {
 	lockdb.Lock()
 	defer lockdb.Unlock()
 
-	os.Remove(fmt.Sprintf("./%s.db", beego.AppConfig.String("appname")))
+	//os.Remove(fmt.Sprintf("./%s.db", beego.AppConfig.String("appname")))
 
 	if db, err = sqlx.Open("sqlite3", fmt.Sprintf("./%s.db", beego.AppConfig.String("appname"))); err != nil {
 		goto errDeal

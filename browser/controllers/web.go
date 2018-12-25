@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -81,7 +82,7 @@ func (wc *WebController) TxByTxHash() {
 	var (
 		err    error
 		result *chain.Result
-		//txds   []TxD
+		datas  []chain.TxD_Ex
 	)
 	wc.Layout = "layout.html"
 	wc.TplName = "search_txs.tpl"
@@ -94,7 +95,28 @@ func (wc *WebController) TxByTxHash() {
 		goto errDeal
 	}
 
-	wc.Data["TransDetail"] = result.TxDs
+	for _, v := range result.TxDs {
+		var x chain.TxD_Ex
+		x.TxID = v.TxID
+		x.TxHash = v.TxHash
+		x.BlockHeight = v.BlockHeight
+		x.BlockHash = v.BlockHash
+		x.ActionCount = v.ActionCount
+		x.ActionID = v.ActionID
+		x.Src = v.Src
+		x.Dst = v.Dst
+		x.Nonce = v.Nonce
+		x.Amount = v.Amount
+		x.ResultCode = v.ResultCode
+		x.ResultMsg = v.ResultMsg
+		x.CreateAt = v.CreateAt
+		x.JData = v.JData
+		x.Memo = v.Memo
+		x.TimeStr = time.Unix(int64(x.CreateAt)/1e9, 0).Format(time.RFC3339)
+		datas = append(datas, x)
+	}
+
+	wc.Data["TransDetail"] = datas
 	return
 errDeal:
 	log.Logger.Error("TxByTxHash", zap.Error(err))
@@ -106,7 +128,7 @@ func (wc *WebController) TxInByAddress() {
 	var (
 		err    error
 		result *chain.Result
-		//txds   []TxD
+		datas  []chain.TxD_Ex
 	)
 	wc.Layout = "layout.html"
 	wc.TplName = "search_txs.tpl"
@@ -117,7 +139,27 @@ func (wc *WebController) TxInByAddress() {
 	if err != nil {
 		goto errDeal
 	}
-	wc.Data["TransDetail"] = result.TxDs
+	for _, v := range result.TxDs {
+		var x chain.TxD_Ex
+		x.TxID = v.TxID
+		x.TxHash = v.TxHash
+		x.BlockHeight = v.BlockHeight
+		x.BlockHash = v.BlockHash
+		x.ActionCount = v.ActionCount
+		x.ActionID = v.ActionID
+		x.Src = v.Src
+		x.Dst = v.Dst
+		x.Nonce = v.Nonce
+		x.Amount = v.Amount
+		x.ResultCode = v.ResultCode
+		x.ResultMsg = v.ResultMsg
+		x.CreateAt = v.CreateAt
+		x.JData = v.JData
+		x.Memo = v.Memo
+		x.TimeStr = time.Unix(int64(x.CreateAt)/1e9, 0).Format(time.RFC3339)
+		datas = append(datas, x)
+	}
+	wc.Data["TransDetail"] = datas
 	return
 errDeal:
 	log.Logger.Error("TxInByAddress", zap.Error(err))
@@ -129,7 +171,7 @@ func (wc *WebController) TxOutByAddress() {
 	var (
 		err    error
 		result *chain.Result
-		//txds   []TxD
+		datas  []chain.TxD_Ex
 	)
 	wc.Layout = "layout.html"
 	wc.TplName = "search_txs.tpl"
@@ -140,7 +182,28 @@ func (wc *WebController) TxOutByAddress() {
 	if err != nil {
 		goto errDeal
 	}
-	wc.Data["TransDetail"] = result.TxDs
+	for _, v := range result.TxDs {
+		var x chain.TxD_Ex
+		x.TxID = v.TxID
+		x.TxHash = v.TxHash
+		x.BlockHeight = v.BlockHeight
+		x.BlockHash = v.BlockHash
+		x.ActionCount = v.ActionCount
+		x.ActionID = v.ActionID
+		x.Src = v.Src
+		x.Dst = v.Dst
+		x.Nonce = v.Nonce
+		x.Amount = v.Amount
+		x.ResultCode = v.ResultCode
+		x.ResultMsg = v.ResultMsg
+		x.CreateAt = v.CreateAt
+		x.JData = v.JData
+		x.Memo = v.Memo
+		x.TimeStr = time.Unix(int64(x.CreateAt)/1e9, 0).Format(time.RFC3339)
+		datas = append(datas, x)
+	}
+
+	wc.Data["TransDetail"] = datas
 	return
 errDeal:
 	log.Logger.Error("TxOutByAddress", zap.Error(err))
@@ -181,7 +244,7 @@ func (wc *WebController) TxsPage() {
 	var (
 		err    error
 		result *chain.Result
-		//txds   []TxD
+		datas  []chain.TxD_Ex
 	)
 	wc.Layout = "layout.html"
 	wc.TplName = "search_txs.tpl"
@@ -190,7 +253,28 @@ func (wc *WebController) TxsPage() {
 	if result, err = chain.GetTx(beego.AppConfig.String("chain_api"), "desc", 0, TxLimit); err != nil {
 		goto errDeal
 	}
-	wc.Data["TransDetail"] = result.TxDs
+	for _, v := range result.TxDs {
+		var x chain.TxD_Ex
+		x.TxID = v.TxID
+		x.TxHash = v.TxHash
+		x.BlockHeight = v.BlockHeight
+		x.BlockHash = v.BlockHash
+		x.ActionCount = v.ActionCount
+		x.ActionID = v.ActionID
+		x.Src = v.Src
+		x.Dst = v.Dst
+		x.Nonce = v.Nonce
+		x.Amount = v.Amount
+		x.ResultCode = v.ResultCode
+		x.ResultMsg = v.ResultMsg
+		x.CreateAt = v.CreateAt
+		x.JData = v.JData
+		x.Memo = v.Memo
+		x.TimeStr = time.Unix(int64(x.CreateAt)/1e9, 0).Format(time.RFC3339)
+		datas = append(datas, x)
+	}
+
+	wc.Data["TransDetail"] = datas
 	return
 errDeal:
 	log.Logger.Error("TxsPage", zap.Error(err))

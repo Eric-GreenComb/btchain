@@ -16,6 +16,11 @@ type Result struct {
 	TxDs      []TxD `json:"result"`
 }
 
+type TxD_Ex struct {
+	TxD
+	TimeStr string
+}
+
 type TxD struct {
 	TxID        uint64 `json:"tx_id"`        //交易ID
 	TxHash      string `json:"tx_hash"`      //交易HASH - 重复交易不会被处理
