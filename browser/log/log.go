@@ -8,5 +8,5 @@ import (
 var Logger *zap.Logger
 
 func init() {
-	Logger = log.Initialize("debug", "Initialize", "debug.log", "err.log")
+	Logger = log.Initialize("file", "Initialize", "./log/debug.log", "./log/err.log")
 }
