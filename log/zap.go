@@ -39,6 +39,24 @@ func makeErrorFilter() zapcore.LevelEnabler {
 	return aboveWarn{}
 }
 
+func init() {
+	var encoder zapcore.Encoder
+	encoder = zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+	w := zapcore.AddSync(&lumberjack.Logger{
+		Filename:   "./log/zap_debug.log",
+		MaxSize:    500, // megabytes
+		MaxBackups: 3,
+		MaxAge:     28, // days
+		Compress:   true,
+	})
+	core := zapcore.NewCore(
+		encoder,
+		w,
+		zap.InfoLevel,
+	)
+	Logger = zap.New(core)
+}
+
 func Initialize(mode, env, output string) *zap.Logger {
 	if mode == "file" {
 		var encoder zapcore.Encoder

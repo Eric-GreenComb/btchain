@@ -16,7 +16,7 @@ func main() {
 	}
 
 	logger = log.Initialize("file", "debug", path.Join(cfg.Log.Path, "api.debug.log"))
-
+	logger.Info("config", zap.Any("cfg", cfg))
 	server := server.NewServer(logger, cfg)
 	server.Start()
 }
