@@ -40,8 +40,6 @@ func makeErrorFilter() zapcore.LevelEnabler {
 }
 
 func init() {
-	var encoder zapcore.Encoder
-	encoder = zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   "./log/zap_debug.log",
 		MaxSize:    500, // megabytes
@@ -50,18 +48,19 @@ func init() {
 		Compress:   true,
 	})
 	core := zapcore.NewCore(
-		encoder,
+		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 		w,
-		zap.InfoLevel,
+		zap.DebugLevel,
 	)
-	Logger = zap.New(core)
+
+	Logger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
 }
 
 func Initialize(mode, env, output string) *zap.Logger {
 	if mode == "file" {
 		var encoder zapcore.Encoder
 		if env == "production" {
-			encoder = zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig())
+			encoder = zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 		} else {
 			encoder = zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 		}
@@ -75,9 +74,10 @@ func Initialize(mode, env, output string) *zap.Logger {
 		core := zapcore.NewCore(
 			encoder,
 			w,
-			zap.InfoLevel,
+			zap.DebugLevel,
 		)
-		Logger = zap.New(core)
+
+		Logger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
 	} else {
 		var encoderCfg zapcore.EncoderConfig
 		if env == "production" {
