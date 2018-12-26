@@ -1,19 +1,21 @@
 package define
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"errors"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
-	"github.com/tendermint/go-amino"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 type TxSignature struct {
 	Sig []byte
 }
 
-// todo 待测试
+// SigHash Hash方法
+// 本方法不能随意修改 因为Hash会变，链上也用的这个hash作为交易hash
 func (tx *Transaction) SigHash() (h ethcmn.Hash) {
 	var signTx Transaction
 	for _, v := range tx.Actions {
@@ -26,11 +28,18 @@ func (tx *Transaction) SigHash() (h ethcmn.Hash) {
 		action.Data = v.Data
 		signTx.Actions = append(signTx.Actions, &action)
 	}
+
+	return rlpHash([]interface{}{
+		signTx.Type,
+		signTx.Actions,
+	})
+}
+
+func rlpHash(x interface{}) (h ethcmn.Hash) {
 	hw := sha3.NewKeccak256()
-	b, _ := amino.MarshalBinaryBare(signTx)
-	hw.Write(b)
+	rlp.Encode(hw, x)
 	hw.Sum(h[:0])
-	return
+	return h
 }
 
 func (tx *Transaction) sign(privkeys []*ecdsa.PrivateKey) ([]TxSignature, error) {
@@ -64,22 +73,23 @@ func Signer(tx *Transaction, sig []byte) (ethcmn.Address, error) {
 	}
 
 	sigHash := tx.SigHash()
-	//fmt.Println("signer hash:", tx.SigHash().Hex(), " sign:", sig)
-	publicKey, err := crypto.Ecrecover(sigHash.Bytes(), sig)
+
+	pub, err := crypto.SigToPub(sigHash.Bytes(), sig)
 	if err != nil {
 		return ethcmn.Address{}, err
 	}
-	if len(publicKey) == 0 || publicKey[0] != 4 {
-		return ethcmn.Address{}, errors.New("invalid public key")
-	}
 
-	return ethcmn.BytesToAddress(publicKey), nil
+	return crypto.PubkeyToAddress(*pub), nil
 }
 
 func (tx *Transaction) CheckSig() error {
 	for _, v := range tx.Actions {
-		if _, err := Signer(tx, v.SignHex[:]); err != nil {
+		address, err := Signer(tx, v.SignHex[:])
+		if err != nil {
 			return err
+		}
+		if !bytes.Equal(address.Bytes(), v.Src.Bytes()) {
+			return errors.New("signature failed")
 		}
 	}
 	return nil
