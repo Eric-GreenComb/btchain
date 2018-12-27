@@ -70,6 +70,80 @@ http://192.168.1.2:10000/v1/transactionsAsync  总是返回成功（区块链接
 | ----------- | ------ | -------------- | ----------------- |
 | tx      | String | 交易Hash      |  |
 
+## 二（1）、签名交易
+提供对应私钥交易的三个方法
+```
+/v1/signedTransactionsCommit
+/v1/signedTransactionsSync
+/v1/signedTransactionsAsync
+```
+
+额外参数
+- `Time` 使用RFC3339格式，请转为+8时区
+- `Sign` 签名信息
+
+签名算法
+- sign = secp256k1(hash,priv)
+
+密钥
+priv = crypto.ToECDSA(Hex2Bytes(PrivHex))
+
+编解码
+- 方法 RLP
+- 参数 (SignHex字段为全0)
+```
+type Transaction struct {
+	Type    uint8     //0-默认
+	Actions []*Action //有序的action 按照ID ASC序
+}
+type Action struct {
+	ID        uint8          // 最大支持255笔交易
+	CreatedAt uint64         // 时间
+	Src       ethcmn.Address //
+	Dst       ethcmn.Address //
+	Amount    *big.Int       //
+	Data      string         // 用户数据
+	Memo      string         // 备注
+	SignHex   [65]byte       // 签名 65 bytes
+}
+tosignByte = rlp([]interface{}{tx.Type,tx.Actions})
+```
+hash算法
+```
+hw := sha3.NewKeccak256()
+hw.Write(tosignByte)
+hash = hw.Sum(nil)
+```
+
+
+请求示例
+```
+{
+	"BaseFee": "0",
+	"Actions": [{
+		"ID": 0,
+		"Src": "0x061a060880BB4E5AD559350203d60a4349d3Ecd6",
+		"Priv": "5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033",
+		"Dst": "0xa7b6fB0e8a56d96A37C96796dcdfcA694387dfcA",
+		"Amount": "10",
+		"Data": "admin init",
+		"Memo": "BT Account",
+		"Time": "2018-12-27T10:01:33+08:00",
+		"Sign": "f81bc913aad18014ce98261342d29630b49b7eb6c5be68d4421939b2cce39e0e27e4980adf7a4aa0ae76de47bbfad67a3be2a9969fbcb113655e25e444d32c9001"
+	}, {
+		"ID": 1,
+		"Src": "0x7eb2b9686F0393A924772588eb915472F11Ea274",
+		"Priv": "17fa8fcbf4d07bbf182c50c73bb5096ba82cfa1358437129240472153e4fbf6f",
+		"Dst": "0xa7b6fB0e8a56d96A37C96796dcdfcA694387dfcA",
+		"Amount": "10",
+		"Data": "admin init",
+		"Memo": "BT Account",
+		"Time": "2018-12-27T10:01:33+08:00",
+		"Sign": "a5c09fbf85e12462682b363a2e02da8922f4a6d1dcb25cae42d57a508240aa6903a84467eca889dce79600ab707f3689ec0abf941d536c90431dc028528bc46200"
+	}]
+}
+```
+
 ## 三、查询交易 by hash
 ```
 GET
