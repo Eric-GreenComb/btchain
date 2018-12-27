@@ -41,9 +41,14 @@ func (s *Server) Start() {
 		v1.GET("/accounts/:address/transactions/:direction", s.handler.QueryAccTxsByDirection)
 
 		if s.cfg.Writable {
+			//私钥交易
 			v1.POST("/transactionsCommit", s.handler.SendTransactionsCommit)
 			v1.POST("/transactionsAsync", s.handler.SendTransactionsAsync)
 			v1.POST("/transactionsSync", s.handler.SendTransactionsSync)
+			//签名交易
+			v1.POST("/signedTransactionsCommit", s.handler.SendSignedTransactionsCommit)
+			v1.POST("/signedTransactionsAsync", s.handler.SendSignedTransactionsAsync)
+			v1.POST("/signedTransactionsSync", s.handler.SendSignedTransactionsSync)
 		}
 
 		if s.cfg.IsAdmin {

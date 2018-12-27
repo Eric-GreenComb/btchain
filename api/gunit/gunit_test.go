@@ -16,12 +16,14 @@ import (
 	"log"
 	"math/big"
 	"net/http"
+	"sort"
 	"testing"
 	"time"
 )
 
 var (
-	BASE_API_URL = "http://192.168.8.144:9000/v1/"
+	BASE_API_URL = "http://192.168.8.145:10000/v1/"
+	//BASE_API_URL = "https://btapi.ibdt.tech/v1/"
 )
 
 func Test_transaction(t *testing.T) {
@@ -31,16 +33,13 @@ func Test_transaction(t *testing.T) {
 	var action bean.Action
 	action.ID = 0
 	action.Src = "0x061a060880BB4E5AD559350203d60a4349d3Ecd6"
-	action.Dst = "0xA15d837e862cD9CacEF81214617D7Bb3B6270701"
-	action.Amount = "117"
+	action.Dst = "0xEBC5D91e9b3c8ea8194ec6b0A63ce1548F9eA448"
+	action.Amount = "1"
 	action.Priv = "5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033"
-	action.Data = "沧海一声笑.滔滔两岸潮,浮沉随浪只记今朝;苍天笑,纷纷世上潮,谁负谁胜出天知晓;江山笑,烟雨遥,涛浪淘尽红尘俗世几多娇;清风笑,竟惹寂寥,豪情还剩了一襟晚照;苍生笑,不再寂寥,豪情仍在痴痴笑笑"
+	action.Data = "admin init"
+	action.Memo = "BT Account"
 
 	tdata.Actions = append(tdata.Actions, &action)
-	action2 := action
-	action2.ID = 1
-	action2.Data = "天苍苍野茫茫"
-	tdata.Actions = append(tdata.Actions, &action2)
 
 	b, _ := json.Marshal(&tdata)
 
@@ -59,6 +58,92 @@ func Test_transaction(t *testing.T) {
 
 	fmt.Println(string(b))
 
+}
+
+func Test_signedTransaction(t *testing.T) {
+	var tdata bean.Transaction
+	tdata.BaseFee = "0"
+
+	var action bean.Action
+	action.ID = 0
+	action.Src = "0x061a060880BB4E5AD559350203d60a4349d3Ecd6"
+	action.Dst = "0xa7b6fB0e8a56d96A37C96796dcdfcA694387dfcA"
+	action.Amount = "10"
+	action.Priv = "5b416c67c05f67cdba1de4f1e993040aa7b4f6a6ef022186f3a5640f72e26033"
+	action.Data = "admin init"
+	action.Memo = "BT Account"
+	action.Time = time.Now().Format(time.RFC3339)
+
+	action2 := action
+	action2.ID = 1
+	action2.Src = "0x7eb2b9686F0393A924772588eb915472F11Ea274"
+	action2.Priv = "17fa8fcbf4d07bbf182c50c73bb5096ba82cfa1358437129240472153e4fbf6f"
+	tdata.Actions = append(tdata.Actions, &action)
+	tdata.Actions = append(tdata.Actions, &action2)
+
+	tx, err := signtx(&tdata)
+	if err != nil {
+		t.Fatal("sign failed")
+	}
+
+	for i, v := range tx.Actions {
+		signature := ethcmn.Bytes2Hex(v.SignHex[:])
+		tdata.Actions[i].Sign = signature
+	}
+
+	b, _ := json.Marshal(&tdata)
+
+	fmt.Println(string(b))
+
+	resp, err := http.Post(BASE_API_URL+"signedTransactionsCommit", "application/json", bytes.NewReader(b[:]))
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(b))
+
+}
+
+func signtx(tdata *bean.Transaction) (*define.Transaction, error) {
+	sort.Sort(tdata)
+
+	ops := len(tdata.Actions)
+
+	var tx define.Transaction
+
+	tx.Actions = make([]*define.Action, ops)
+	var privkeys []*ecdsa.PrivateKey
+	for i, v := range tdata.Actions {
+		var action define.Action
+		action.ID = uint8(v.ID)
+		t, err := time.Parse(time.RFC3339, v.Time)
+		if err != nil {
+			return &tx, err
+		}
+		action.CreatedAt = uint64(t.UnixNano())
+		action.Src = ethcmn.HexToAddress(v.Src)
+		action.Dst = ethcmn.HexToAddress(v.Dst)
+		action.Amount, _ = new(big.Int).SetString(v.Amount, 10)
+		action.Data = v.Data
+		action.Memo = v.Memo
+		copy(action.SignHex[:], ethcmn.Hex2Bytes(v.Sign))
+
+		tx.Actions[i] = &action
+
+		privkey, err := crypto.ToECDSA(ethcmn.Hex2Bytes(v.Priv))
+		if err != nil {
+			return &tx, err
+		}
+		privkeys = append(privkeys, privkey)
+	}
+	tx.Sign(privkeys)
+	return &tx, nil
 }
 
 func Test_address(t *testing.T) {

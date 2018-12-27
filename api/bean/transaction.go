@@ -21,6 +21,8 @@ type Action struct {
 	Amount string // 金额 无小数
 	Data   string // 行为价值 最大长度256,大于256只存256字节
 	Memo   string // 最大长度256,大于256只存256字节
+	Time   string // 签名交易时需要此参数 RFC2399
+	Sign   string // 签名信息（签名交易时必选）
 }
 
 func (p Transaction) String() string {
