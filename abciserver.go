@@ -6,7 +6,6 @@ import (
 	"github.com/axengine/btchain/define"
 	"github.com/axengine/btchain/version"
 	ethcmn "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/rlp"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 	abciversion "github.com/tendermint/tendermint/version"
@@ -209,6 +208,7 @@ func (app *BTApplication) Commit() abcitypes.ResponseCommit {
 	}
 
 	//计算 appHash
+	app.tempHeader.StateRoot = stateRoot
 	appHash := app.tempHeader.Hash()
 
 	//保存lastblock
@@ -222,24 +222,13 @@ func (app *BTApplication) Commit() abcitypes.ResponseCommit {
 		app.logger.Error("ABCI SaveDBData", zap.Error(err), zap.Uint64("height", app.tempHeader.Height))
 	}
 
-	//  -------------准备新区块---------
-
-	// 更新stateDup
-	app.stateDup.lock.Lock()
-	app.stateDup.state, err = state.New(stateRoot, state.NewDatabase(app.chainDb))
-	app.stateDup.lock.Unlock()
-	if err != nil {
-		app.logger.Error("ABCI state.New", zap.Error(err), zap.String("stateRoot", stateRoot.Hex()))
-		panic(err)
-	}
-
 	//清理区块执行现场
 	app.blockExeInfo = &blockExeInfo{}
 	app.tempHeader = &define.AppHeader{}
 
+	//  -------------准备新区块---------
 	//下个区块需要上个的hash
 	app.tempHeader.PrevHash = ethcmn.BytesToHash(appHash)
-	app.tempHeader.StateRoot = stateRoot
 
 	app.logger.Info("ABCI Commit", zap.String("hash", ethcmn.BytesToHash(appHash).Hex()), zap.Uint64("height", app.currentHeader.Height))
 	return abcitypes.ResponseCommit{Data: appHash}

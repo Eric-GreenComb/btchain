@@ -114,13 +114,7 @@ func (app *BTApplication) init() {
 			panic(err)
 		}
 
-		//app.stateDup.state.Commit(false)
 		if err := app.stateDup.state.Database().TrieDB().Commit(root, true); err != nil {
-			panic(err)
-		}
-
-		app.stateDup.state, err = state.New(root, state.NewDatabase(app.chainDb)) //todo 需要确认写法是否正确
-		if err != nil {
 			panic(err)
 		}
 	}
